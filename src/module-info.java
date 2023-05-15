@@ -6,4 +6,5 @@
  *
  */
 module DatabaseMagementSystem {
+	requires java.sql;
 }
