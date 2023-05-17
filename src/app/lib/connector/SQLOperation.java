@@ -37,13 +37,12 @@ public class SQLOperation implements  java.lang.AutoCloseable {
         if (warning != null) {
           return ResultFactory.fromString(warning.getMessage());
         }
-        return ResultFactory.fromString("Rows Affected: " + rowsAffected);
+        return ResultFactory.fromString("Filas afectadas: " + rowsAffected);
       }
 
     } catch (Exception e) {
       return ResultFactory.fromException(e);
     }
-
   }
 
 
