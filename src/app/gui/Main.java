@@ -6,11 +6,14 @@ import javax.swing.JFrame;
 import javax.swing.JToolBar;
 
 import app.lib.connector.*;
+import app.lib.result.ResultType;
+import app.lib.result.Status;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
-
+import javax.swing.DefaultListCellRenderer;
 import javax.swing.JList;
+import javax.swing.DefaultListModel;
 import javax.swing.JTabbedPane;
 import javax.swing.JEditorPane;
 import javax.swing.BorderFactory;
@@ -28,6 +31,7 @@ import javax.swing.GroupLayout;
 import javax.swing.GroupLayout.Alignment;
 import javax.swing.LayoutStyle.ComponentPlacement;
 import javax.swing.ListSelectionModel;
+import javax.swing.AbstractListModel;
 
 public class Main {
 
@@ -37,8 +41,20 @@ public class Main {
 	private JPanel panel;
 	private JButton btnNewButton_1;
 	private JButton btnNewButton_2;
+	private JList tableList;
 	private Editor editor;
-	private String connectionString;
+	private String connectionString = new ConnectionStringBuilder()
+				.withHost("localhost")
+				.withEncrypt(true)
+				.withPort(1433)
+				.withDbName("master")
+				.withUserName("sa")
+				.withPassword("PasswordO1")
+				.withTrustServerCertificates(true)
+				.build();
+;
+	private final String getTablesQuery = "SELECT name AS _table FROM sys.tables WHERE type = 'U' AND name NOT LIKE 'sys%' AND name NOT LIKE 'dt%' AND name NOT LIKE 'spt_%' AND name NOT LIKE 'MSreplication_options';";
+	private JSplitPane splitPane;
 
 	/**
 	 * Launch the application.
@@ -78,75 +94,75 @@ public class Main {
 		
 		btnNewButton_2 = new JButton("Nueva tabla");
 		
-		JButton btnNewButton = new JButton("Modificar tabla");
+		JButton btnNewButton = new JButton("Recargar la lista");
+		btnNewButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				fillList();
+			}
+		});
 		
-		JButton btnNewButton_3 = new JButton("Eliminar Tabla");
-		
-		JList list = new JList();
-		list.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
+		tableList = new JList();
+		tableList.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
 		GroupLayout gl_panel = new GroupLayout(panel);
 		gl_panel.setHorizontalGroup(
-			gl_panel.createParallelGroup(Alignment.TRAILING)
+			gl_panel.createParallelGroup(Alignment.LEADING)
 				.addGroup(gl_panel.createSequentialGroup()
-					.addGap(5)
 					.addGroup(gl_panel.createParallelGroup(Alignment.LEADING)
-						.addComponent(btnNewButton_1, GroupLayout.DEFAULT_SIZE, 161, Short.MAX_VALUE)
-						.addComponent(btnNewButton_2, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 161, Short.MAX_VALUE)
-						.addComponent(btnNewButton, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 161, Short.MAX_VALUE)
-						.addComponent(btnNewButton_3, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 161, Short.MAX_VALUE))
+						.addGroup(gl_panel.createSequentialGroup()
+							.addContainerGap()
+							.addGroup(gl_panel.createParallelGroup(Alignment.LEADING)
+								.addComponent(btnNewButton_1, GroupLayout.DEFAULT_SIZE, 170, Short.MAX_VALUE)
+								.addComponent(btnNewButton_2, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 170, Short.MAX_VALUE)
+								.addComponent(btnNewButton, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 170, Short.MAX_VALUE)))
+						.addGroup(gl_panel.createSequentialGroup()
+							.addContainerGap()
+							.addComponent(tableList, GroupLayout.DEFAULT_SIZE, 165, Short.MAX_VALUE)))
 					.addContainerGap())
-				.addGroup(gl_panel.createSequentialGroup()
-					.addGap(185)
-					.addComponent(list)
-					.addGap(0, 0, Short.MAX_VALUE))
 		);
 		gl_panel.setVerticalGroup(
 			gl_panel.createParallelGroup(Alignment.LEADING)
 				.addGroup(gl_panel.createSequentialGroup()
-					.addGap(5)
+					.addContainerGap()
 					.addComponent(btnNewButton_1)
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addComponent(btnNewButton_2)
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addComponent(btnNewButton)
 					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(btnNewButton_3)
-					.addPreferredGap(ComponentPlacement.RELATED, 69, Short.MAX_VALUE)
-					.addComponent(list)
-					.addGap(450))
+					.addComponent(tableList, GroupLayout.DEFAULT_SIZE, 475, Short.MAX_VALUE)
+					.addContainerGap())
 		);
 		panel.setLayout(gl_panel);
 		
 		JTabbedPane tabbedPane = new JTabbedPane(JTabbedPane.TOP);
-		frame.getContentPane().add(tabbedPane, BorderLayout.CENTER);
 		
 		this.editor = new Editor(this);
 		tabbedPane.addTab("Editor SQL", null, editor, null);
-		
+
 		this.jpanel = new JPanel();
 		this.resultReader = new ResultReader();
 		this.jpanel.add(resultReader);
-		frame.getContentPane().add(this.jpanel, BorderLayout.SOUTH);
+		
+		splitPane = new JSplitPane();
+		splitPane.setOrientation(JSplitPane.VERTICAL_SPLIT);
+		splitPane.setLeftComponent(tabbedPane);
+		splitPane.setRightComponent(this.jpanel);
+		
+		frame.getContentPane().add(splitPane, BorderLayout.CENTER);
+		
+		DefaultListCellRenderer renderer = (DefaultListCellRenderer) tableList.getCellRenderer();
+		renderer.setHorizontalAlignment(SwingConstants.CENTER);
+		
+		
+		this.fillList();
 	}
 
 	public void loadResults(String[] commands) {
-		var connectionString = new ConnectionStringBuilder()
-				.withHost("localhost")
-				.withEncrypt(true)
-				.withPort(1433)
-				.withDbName("master")
-				.withUserName("sa")
-				.withPassword("PasswordO1")
-				.withTrustServerCertificates(true)
-				.build();
-	
-// SELECT name FROM sys.tables WHERE type = 'U' AND name NOT LIKE 'sys%' AND name NOT LIKE 'dt%' AND name NOT LIKE 'spt_%' AND name NOT LIKE 'MSreplication_options';
-		
 		for (String command : commands) {
 			command = command
 					.strip();
 			
-			try (var operation = new SQLOperation(connectionString)) {
+			try (var operation = new SQLOperation(this.connectionString)) {
 				var result = operation.executeRaw(command);
 				this.resultReader.loadResult(result);
 				this.jpanel.revalidate();
@@ -155,5 +171,30 @@ public class Main {
 			}
 		}
 	}
-	
+
+	public void fillList() {
+		try (var operation = new SQLOperation(this.connectionString)) {
+			var result = operation.executeRaw(this.getTablesQuery);
+			if (result.getStatus().equals(Status.FAILURE) || result.getType().equals(ResultType.STRING)) {
+				this.resultReader.loadResult(result);
+				this.jpanel.revalidate();
+				return;
+			}
+			
+			var tables = result.getTable().get("_table");
+			var listModel = new DefaultListModel<String>();
+			tableList.removeAll();
+			
+			for (Object table : tables) {
+				listModel.addElement(table.toString());
+			}
+		
+			tableList.setModel(listModel);
+			tableList.revalidate();
+			
+		} catch(Exception e) {
+			e.printStackTrace();
+		}
+		
+	}
 }
