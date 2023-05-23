@@ -2,24 +2,46 @@ package app.gui;
 
 import java.util.ArrayList;
 
+import javax.swing.GroupLayout;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.table.DefaultTableModel;
 import app.lib.result.*;
+import java.awt.BorderLayout;
+import java.awt.FlowLayout;
+import javax.swing.BoxLayout;
+import javax.swing.GroupLayout.Alignment;
 
 public class ResultReader extends JPanel {
 	private JTable table;
 	private JTextArea textArea;
-	
+	private JScrollPane scrollPane;
+
+	public ResultReader() {
+		
+		this.scrollPane = new JScrollPane();
+		GroupLayout groupLayout = new GroupLayout(this);
+		groupLayout.setHorizontalGroup(
+			groupLayout.createParallelGroup(Alignment.LEADING)
+				.addComponent(this.scrollPane, GroupLayout.DEFAULT_SIZE, 450, Short.MAX_VALUE)
+		);
+		groupLayout.setVerticalGroup(
+			groupLayout.createParallelGroup(Alignment.LEADING)
+				.addComponent(this.scrollPane, GroupLayout.DEFAULT_SIZE, 300, Short.MAX_VALUE)
+		);
+		setLayout(groupLayout);
+	}
 	
 	public void loadResult(Result result) {
-		this.removeAll();	
 		if (result.getStatus().equals(Status.FAILURE)) {
 			textArea = new JTextArea();
 			textArea.setText(result.getReason());
-			this.add(new JScrollPane(textArea));
+			textArea.setEditable(false);
+			this.scrollPane.setViewportView(textArea);
+			this.scrollPane.revalidate();
+			this.revalidate();
 			return;
         }
 
@@ -55,13 +77,17 @@ public class ResultReader extends JPanel {
 			table.setEnabled(false);	
 			
         	table.setModel(model);
-        	this.add(new JScrollPane(table));
+        	this.scrollPane.setViewportView(table);
+			this.scrollPane.revalidate();
+			this.revalidate();
         	return;
         }
 
 		textArea = new JTextArea();
+		textArea.setEditable(false);
         textArea.setText(result.getText());
-		this.add(new JScrollPane(textArea));
+		this.scrollPane.setViewportView(textArea);
+		this.scrollPane.revalidate();
 		this.revalidate();
 	}
 	

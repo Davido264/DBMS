@@ -6,10 +6,12 @@ import javax.swing.JFrame;
 import javax.swing.JToolBar;
 
 import app.lib.connector.*;
+import app.lib.result.ResultFactory;
 import app.lib.result.ResultType;
 import app.lib.result.Status;
 
 import java.awt.BorderLayout;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JList;
@@ -36,25 +38,18 @@ import javax.swing.AbstractListModel;
 public class Main {
 
 	private JFrame frame;
-	private ResultReader resultReader;
-	private JPanel jpanel;
 	private JPanel panel;
 	private JButton btnNewButton_1;
 	private JButton btnNewButton_2;
 	private JList tableList;
 	private Editor editor;
-	private String connectionString = new ConnectionStringBuilder()
-				.withHost("localhost")
-				.withEncrypt(true)
-				.withPort(1433)
-				.withDbName("master")
-				.withUserName("sa")
-				.withPassword("PasswordO1")
-				.withTrustServerCertificates(true)
-				.build();
-;
+	private String connectionString; 
+	
+	// localhost:1433  master sa  PasswordO1
+	
 	private final String getTablesQuery = "SELECT name AS _table FROM sys.tables WHERE type = 'U' AND name NOT LIKE 'sys%' AND name NOT LIKE 'dt%' AND name NOT LIKE 'spt_%' AND name NOT LIKE 'MSreplication_options';";
 	private JSplitPane splitPane;
+	private ResultReader resultReader;
 
 	/**
 	 * Launch the application.
@@ -139,22 +134,21 @@ public class Main {
 		this.editor = new Editor(this);
 		tabbedPane.addTab("Editor SQL", null, editor, null);
 
-		this.jpanel = new JPanel();
-		this.resultReader = new ResultReader();
-		this.jpanel.add(resultReader);
+		resultReader = new ResultReader();
 		
 		splitPane = new JSplitPane();
 		splitPane.setOrientation(JSplitPane.VERTICAL_SPLIT);
 		splitPane.setLeftComponent(tabbedPane);
-		splitPane.setRightComponent(this.jpanel);
+		splitPane.setRightComponent(resultReader);
 		
 		frame.getContentPane().add(splitPane, BorderLayout.CENTER);
+		
 		
 		DefaultListCellRenderer renderer = (DefaultListCellRenderer) tableList.getCellRenderer();
 		renderer.setHorizontalAlignment(SwingConstants.CENTER);
 		
 		
-		this.fillList();
+		this.connect();
 	}
 
 	public void loadResults(String[] commands) {
@@ -165,7 +159,7 @@ public class Main {
 			try (var operation = new SQLOperation(this.connectionString)) {
 				var result = operation.executeRaw(command);
 				this.resultReader.loadResult(result);
-				this.jpanel.revalidate();
+				this.splitPane.revalidate();
 			} catch(Exception e) {
 				e.printStackTrace();
 			}
@@ -174,10 +168,11 @@ public class Main {
 
 	public void fillList() {
 		try (var operation = new SQLOperation(this.connectionString)) {
+			frame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 			var result = operation.executeRaw(this.getTablesQuery);
 			if (result.getStatus().equals(Status.FAILURE) || result.getType().equals(ResultType.STRING)) {
 				this.resultReader.loadResult(result);
-				this.jpanel.revalidate();
+				this.splitPane.revalidate();
 				return;
 			}
 			
@@ -193,8 +188,21 @@ public class Main {
 			tableList.revalidate();
 			
 		} catch(Exception e) {
-			e.printStackTrace();
+			this.resultReader.loadResult(ResultFactory.fromException(e));
+		} finally {
+			frame.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 		}
-		
+	}
+	
+	public void connect() {
+		Connector dialog = new Connector(frame);
+		dialog.setVisible(true);
+        if (!dialog.isConfigured()) {
+        	return;
+        }
+        String result = dialog.getConnectionString();
+        System.out.println(result);
+        this.connectionString = result;
+        this.fillList();
 	}
 }
