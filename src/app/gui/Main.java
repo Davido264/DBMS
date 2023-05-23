@@ -2,10 +2,13 @@ package app.gui;
 
 import java.awt.EventQueue;
 
+
 import javax.swing.JFrame;
 import javax.swing.JToolBar;
 
 import app.lib.connector.*;
+import app.lib.queryBuilders.Drop;
+import app.lib.queryBuilders.Select;
 import app.lib.result.ResultFactory;
 import app.lib.result.ResultType;
 import app.lib.result.Status;
@@ -40,21 +43,21 @@ public class Main {
 	private JFrame frame;
 	private JPanel panel;
 	private JButton btnNewButton_1;
-	private JButton btnNewButton_2;
 	private JList tableList;
 	private Editor editor;
 	private String connectionString; 
-	
-	// localhost:1433  master sa  PasswordO1
+	private JSplitPane splitPane;
+	private ResultReader resultReader;
+	private JPanel panel_1;
 	
 	private final String getTablesQuery = """
-SELECT (t.name + '.' + s.name) AS _table 
+SELECT (s.name + '.' + t.name) AS _table 
 FROM sys.tables t 
 INNER JOIN sys.schemas s ON t.schema_id = s.schema_id 
 WHERE t.type = 'U' AND t.name NOT LIKE 'sys%' AND t.name NOT LIKE 'dt%' AND t.name NOT LIKE 'spt_%' AND t.name NOT LIKE 'MSreplication_options';		
 			""";
-	private JSplitPane splitPane;
-	private ResultReader resultReader;
+	private JButton btnNewButton_2;
+	private JButton btnNewButton_3;
 
 	/**
 	 * Launch the application.
@@ -98,8 +101,6 @@ WHERE t.type = 'U' AND t.name NOT LIKE 'sys%' AND t.name NOT LIKE 'dt%' AND t.na
 			}
 		});
 		
-		btnNewButton_2 = new JButton("Nueva tabla");
-		
 		JButton btnNewButton = new JButton("Recargar la lista");
 		btnNewButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -110,20 +111,49 @@ WHERE t.type = 'U' AND t.name NOT LIKE 'sys%' AND t.name NOT LIKE 'dt%' AND t.na
 		tableList = new JList();
 		tableList.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
 		JScrollPane scrollPane = new JScrollPane(tableList);
+		
+		btnNewButton_2 = new JButton("Visualizar tabla");
+		btnNewButton_2.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				if (tableList.isSelectionEmpty()) {
+					return;
+				} 
+				
+				String selectedItem = tableList.getSelectedValue().toString();
+				if (selectedItem != null) {
+					Select generator = Select.all(selectedItem);
+					loadResults(generator.generateQuery());
+				}
+			}
+		});
+		
+		btnNewButton_3 = new JButton("Eliminar tabla");
+		btnNewButton_3.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				if (tableList.isSelectionEmpty()) {
+					return;
+				} 
+				
+				String selectedItem = tableList.getSelectedValue().toString();
+				if (selectedItem != null) {
+					Drop generator = new Drop(selectedItem);
+					loadResults(generator.generateQuery());
+				}
+				
+				fillList();
+			}
+		});
 		GroupLayout gl_panel = new GroupLayout(panel);
 		gl_panel.setHorizontalGroup(
 			gl_panel.createParallelGroup(Alignment.LEADING)
 				.addGroup(gl_panel.createSequentialGroup()
+					.addContainerGap()
 					.addGroup(gl_panel.createParallelGroup(Alignment.LEADING)
-						.addGroup(gl_panel.createSequentialGroup()
-							.addContainerGap()
-							.addGroup(gl_panel.createParallelGroup(Alignment.LEADING)
-								.addComponent(btnNewButton_1, GroupLayout.DEFAULT_SIZE, 170, Short.MAX_VALUE)
-								.addComponent(btnNewButton_2, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 170, Short.MAX_VALUE)
-								.addComponent(btnNewButton, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 170, Short.MAX_VALUE)))
-						.addGroup(gl_panel.createSequentialGroup()
-							.addContainerGap()
-							.addComponent(scrollPane, GroupLayout.DEFAULT_SIZE, 165, Short.MAX_VALUE)))
+						.addComponent(btnNewButton_1, GroupLayout.DEFAULT_SIZE, 170, Short.MAX_VALUE)
+						.addComponent(scrollPane, GroupLayout.DEFAULT_SIZE, 170, Short.MAX_VALUE)
+						.addComponent(btnNewButton, GroupLayout.DEFAULT_SIZE, 170, Short.MAX_VALUE)
+						.addComponent(btnNewButton_2, GroupLayout.DEFAULT_SIZE, 170, Short.MAX_VALUE)
+						.addComponent(btnNewButton_3, GroupLayout.DEFAULT_SIZE, 170, Short.MAX_VALUE))
 					.addContainerGap())
 		);
 		gl_panel.setVerticalGroup(
@@ -132,11 +162,13 @@ WHERE t.type = 'U' AND t.name NOT LIKE 'sys%' AND t.name NOT LIKE 'dt%' AND t.na
 					.addContainerGap()
 					.addComponent(btnNewButton_1)
 					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(btnNewButton_2)
-					.addPreferredGap(ComponentPlacement.RELATED)
 					.addComponent(btnNewButton)
 					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(scrollPane, GroupLayout.DEFAULT_SIZE, 475, Short.MAX_VALUE)
+					.addComponent(btnNewButton_2)
+					.addPreferredGap(ComponentPlacement.RELATED)
+					.addComponent(btnNewButton_3)
+					.addPreferredGap(ComponentPlacement.RELATED)
+					.addComponent(scrollPane, GroupLayout.DEFAULT_SIZE, 458, Short.MAX_VALUE)
 					.addContainerGap())
 		);
 		panel.setLayout(gl_panel);
@@ -151,6 +183,10 @@ WHERE t.type = 'U' AND t.name NOT LIKE 'sys%' AND t.name NOT LIKE 'dt%' AND t.na
 		splitPane = new JSplitPane();
 		splitPane.setOrientation(JSplitPane.VERTICAL_SPLIT);
 		splitPane.setLeftComponent(tabbedPane);
+		
+		panel_1 = new JPanel();
+		panel_1.add(new TableProperties(this,true));
+		tabbedPane.addTab("Editor de Tablas", null, panel_1, null);
 		splitPane.setRightComponent(resultReader);
 		splitPane.setDividerLocation(0.9);
 		
@@ -166,19 +202,25 @@ WHERE t.type = 'U' AND t.name NOT LIKE 'sys%' AND t.name NOT LIKE 'dt%' AND t.na
 		this.connect();
 	}
 
-	public void loadResults(String[] commands) {
-		for (String command : commands) {
-			command = command
-					.strip();
+	public void loadResults(String... commands) {
+		try {
+			frame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+			for (String command : commands) {
+				command = command
+						.strip();
 			
-			try (var operation = new SQLOperation(this.connectionString)) {
-				var result = operation.executeRaw(command);
-				this.resultReader.loadResult(result);
-				this.splitPane.revalidate();
-			} catch(Exception e) {
-				e.printStackTrace();
+				try (var operation = new SQLOperation(this.connectionString)) {
+					var result = operation.executeRaw(command);
+					this.resultReader.loadResult(result);
+					this.splitPane.revalidate();
+				}
 			}
+		} catch(Exception e) {
+			this.resultReader.loadResult(ResultFactory.fromException(e));
+		} finally {
+			frame.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 		}
+
 	}
 
 	public void fillList() {
@@ -217,7 +259,6 @@ WHERE t.type = 'U' AND t.name NOT LIKE 'sys%' AND t.name NOT LIKE 'dt%' AND t.na
         	return;
         }
         String result = dialog.getConnectionString();
-        System.out.println(result);
         this.connectionString = result;
         this.fillList();
 	}
