@@ -47,7 +47,12 @@ public class Main {
 	
 	// localhost:1433  master sa  PasswordO1
 	
-	private final String getTablesQuery = "SELECT name AS _table FROM sys.tables WHERE type = 'U' AND name NOT LIKE 'sys%' AND name NOT LIKE 'dt%' AND name NOT LIKE 'spt_%' AND name NOT LIKE 'MSreplication_options';";
+	private final String getTablesQuery = """
+SELECT (t.name + '.' + s.name) AS _table 
+FROM sys.tables t 
+INNER JOIN sys.schemas s ON t.schema_id = s.schema_id 
+WHERE t.type = 'U' AND t.name NOT LIKE 'sys%' AND t.name NOT LIKE 'dt%' AND t.name NOT LIKE 'spt_%' AND t.name NOT LIKE 'MSreplication_options';		
+			""";
 	private JSplitPane splitPane;
 	private ResultReader resultReader;
 
@@ -79,13 +84,19 @@ public class Main {
 	 */
 	private void initialize() {
 		frame = new JFrame();
-		frame.setBounds(100, 100, 816, 637);
+		frame.setBounds(100, 100, 904, 637);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+	
+		JSplitPane mainPane = new JSplitPane();
 		
 		panel = new JPanel();
-		frame.getContentPane().add(panel, BorderLayout.WEST);
 		
 		btnNewButton_1 = new JButton("Conectar");
+		btnNewButton_1.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				connect();
+			}
+		});
 		
 		btnNewButton_2 = new JButton("Nueva tabla");
 		
@@ -98,6 +109,7 @@ public class Main {
 		
 		tableList = new JList();
 		tableList.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
+		JScrollPane scrollPane = new JScrollPane(tableList);
 		GroupLayout gl_panel = new GroupLayout(panel);
 		gl_panel.setHorizontalGroup(
 			gl_panel.createParallelGroup(Alignment.LEADING)
@@ -111,7 +123,7 @@ public class Main {
 								.addComponent(btnNewButton, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 170, Short.MAX_VALUE)))
 						.addGroup(gl_panel.createSequentialGroup()
 							.addContainerGap()
-							.addComponent(tableList, GroupLayout.DEFAULT_SIZE, 165, Short.MAX_VALUE)))
+							.addComponent(scrollPane, GroupLayout.DEFAULT_SIZE, 165, Short.MAX_VALUE)))
 					.addContainerGap())
 		);
 		gl_panel.setVerticalGroup(
@@ -124,7 +136,7 @@ public class Main {
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addComponent(btnNewButton)
 					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(tableList, GroupLayout.DEFAULT_SIZE, 475, Short.MAX_VALUE)
+					.addComponent(scrollPane, GroupLayout.DEFAULT_SIZE, 475, Short.MAX_VALUE)
 					.addContainerGap())
 		);
 		panel.setLayout(gl_panel);
@@ -140,13 +152,16 @@ public class Main {
 		splitPane.setOrientation(JSplitPane.VERTICAL_SPLIT);
 		splitPane.setLeftComponent(tabbedPane);
 		splitPane.setRightComponent(resultReader);
-		
-		frame.getContentPane().add(splitPane, BorderLayout.CENTER);
+		splitPane.setDividerLocation(0.9);
 		
 		
 		DefaultListCellRenderer renderer = (DefaultListCellRenderer) tableList.getCellRenderer();
-		renderer.setHorizontalAlignment(SwingConstants.CENTER);
+		renderer.setHorizontalAlignment(SwingConstants.LEFT);
+	
 		
+		mainPane.setLeftComponent(panel);
+		mainPane.setRightComponent(splitPane);
+		frame.getContentPane().add(mainPane);
 		
 		this.connect();
 	}
@@ -198,6 +213,7 @@ public class Main {
 		Connector dialog = new Connector(frame);
 		dialog.setVisible(true);
         if (!dialog.isConfigured()) {
+        	this.resultReader.loadResult(ResultFactory.fromString("Conexión cancelada"));
         	return;
         }
         String result = dialog.getConnectionString();
