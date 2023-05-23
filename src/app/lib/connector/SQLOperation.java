@@ -48,8 +48,12 @@ public class SQLOperation implements  java.lang.AutoCloseable {
 
   @Override
   public void close() throws SQLException {
-    this.statement.close();
-    this.connection.close();
+	  if (this.statement != null && !this.statement.isClosed()) {
+		  this.statement.close();
+	  }
+	  if (this.connection != null && !this.connection.isClosed()) {
+		  this.connection.close();
+	  }
   }
 
 }
