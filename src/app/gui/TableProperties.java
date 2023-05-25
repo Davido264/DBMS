@@ -11,6 +11,11 @@ import javax.swing.JComboBox;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableColumn;
+import javax.swing.text.AbstractDocument;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.DocumentFilter;
+import javax.swing.text.DocumentFilter.FilterBypass;
 import javax.swing.ComboBoxEditor;
 import app.lib.queryBuilders.SQLServerTypes;
 import app.lib.queryBuilders.Create;
@@ -25,6 +30,7 @@ import javax.swing.JButton;
 import java.awt.event.ActionListener;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
+import javax.swing.JLabel;
 
 public class TableProperties extends JPanel {
 	private JTable table;
@@ -45,7 +51,7 @@ public class TableProperties extends JPanel {
 		textField.setColumns(10);
 		textField.setEditable(editable);
 		
-		JButton btnNewButton = new JButton("Nueva Columna");
+		JButton btnNewButton = new JButton("+");
 		btnNewButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				DefaultTableModel model = (DefaultTableModel) table.getModel();
@@ -60,19 +66,48 @@ public class TableProperties extends JPanel {
 				executeCreateTable();
 			}
 		});
+		
+		JButton btnNewButton_2 = new JButton("-");
+		btnNewButton_2.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				// Obtener el índice de la fila seleccionada
+                int selectedRow = table.getSelectedRow();
+
+                // Verificar si se seleccionó una fila
+                if (selectedRow != -1) {
+                	DefaultTableModel model = (DefaultTableModel) table.getModel();
+                    model.removeRow(selectedRow);
+                    table.revalidate();
+                }
+			}
+		});
+		
+		JLabel lblNewLabel = new JLabel("Nombre de la Tabla");
+		
+		JLabel lblNewLabel_1 = new JLabel("Columnas");
 		GroupLayout groupLayout = new GroupLayout(this);
 		groupLayout.setHorizontalGroup(
 			groupLayout.createParallelGroup(Alignment.LEADING)
 				.addGroup(groupLayout.createSequentialGroup()
-					.addContainerGap()
-					.addGroup(groupLayout.createParallelGroup(Alignment.TRAILING)
-						.addGroup(Alignment.LEADING, groupLayout.createSequentialGroup()
-							.addComponent(textField, GroupLayout.PREFERRED_SIZE, 227, GroupLayout.PREFERRED_SIZE)
-							.addPreferredGap(ComponentPlacement.UNRELATED)
-							.addComponent(btnNewButton)
-							.addPreferredGap(ComponentPlacement.RELATED)
-							.addComponent(btnNewButton_1, GroupLayout.PREFERRED_SIZE, 80, Short.MAX_VALUE))
-						.addComponent(scroll, GroupLayout.DEFAULT_SIZE, 430, Short.MAX_VALUE))
+					.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
+						.addGroup(Alignment.TRAILING, groupLayout.createSequentialGroup()
+							.addGap(360)
+							.addComponent(btnNewButton_1, GroupLayout.PREFERRED_SIZE, 87, Short.MAX_VALUE))
+						.addGroup(groupLayout.createSequentialGroup()
+							.addContainerGap()
+							.addComponent(scroll, GroupLayout.DEFAULT_SIZE, 437, Short.MAX_VALUE))
+						.addGroup(Alignment.TRAILING, groupLayout.createSequentialGroup()
+							.addContainerGap()
+							.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
+								.addComponent(textField, GroupLayout.PREFERRED_SIZE, 167, GroupLayout.PREFERRED_SIZE)
+								.addComponent(lblNewLabel))
+							.addPreferredGap(ComponentPlacement.RELATED, 186, Short.MAX_VALUE)
+							.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
+								.addComponent(lblNewLabel_1)
+								.addGroup(groupLayout.createSequentialGroup()
+									.addComponent(btnNewButton)
+									.addPreferredGap(ComponentPlacement.RELATED)
+									.addComponent(btnNewButton_2)))))
 					.addContainerGap())
 		);
 		groupLayout.setVerticalGroup(
@@ -80,12 +115,18 @@ public class TableProperties extends JPanel {
 				.addGroup(groupLayout.createSequentialGroup()
 					.addContainerGap()
 					.addGroup(groupLayout.createParallelGroup(Alignment.BASELINE)
-						.addComponent(textField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+						.addComponent(lblNewLabel)
+						.addComponent(lblNewLabel_1))
+					.addPreferredGap(ComponentPlacement.RELATED)
+					.addGroup(groupLayout.createParallelGroup(Alignment.BASELINE)
+						.addComponent(btnNewButton_2)
 						.addComponent(btnNewButton)
-						.addComponent(btnNewButton_1))
-					.addPreferredGap(ComponentPlacement.UNRELATED)
-					.addComponent(scroll, GroupLayout.DEFAULT_SIZE, 247, Short.MAX_VALUE)
-					.addGap(22))
+						.addComponent(textField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+					.addPreferredGap(ComponentPlacement.RELATED)
+					.addComponent(scroll, GroupLayout.PREFERRED_SIZE, 227, GroupLayout.PREFERRED_SIZE)
+					.addPreferredGap(ComponentPlacement.RELATED)
+					.addComponent(btnNewButton_1)
+					.addContainerGap())
 		);
 		setLayout(groupLayout);
 
@@ -166,6 +207,20 @@ public class TableProperties extends JPanel {
                 }
             }
         };
+       
+        TableCellEditor cellEditor = table.getDefaultEditor(Object.class);
+
+        JTextField textField = (JTextField) cellEditor.getTableCellEditorComponent(table, null, true, 0, 0);
+
+        ((AbstractDocument) textField.getDocument()).setDocumentFilter(new DocumentFilter() {
+            @Override
+            public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs) throws BadLocationException {
+                // restringir ' ; \ y / 
+                if (text != null && text.matches("[^';\\\\\\/]+")) {
+                    super.replace(fb, offset, length, text, attrs);
+                }
+            }
+        }); 
         
         JComboBox comboBox = new JComboBox(options);
         comboBox.setEditor(editor);
@@ -213,7 +268,7 @@ public class TableProperties extends JPanel {
 		Create generator = new Create(this.textField.getText(),this.getColumnsFromEditor());
 		String command = generator.generateQuery();
 		this.parent.loadResults(command);
-		this.parent.fillList();
+		this.parent.loadDatabseObjects();
 		DefaultTableModel model = (DefaultTableModel) table.getModel();
 		model.setRowCount(0);
 		this.textField.setText("");

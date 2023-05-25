@@ -32,7 +32,6 @@ public class Connector extends JDialog {
 	private JPasswordField txtPassword;
 	private JCheckBox chckboxEncrypt;
 	private JCheckBox chckboxPort;
-	private JTextField txtDbName;
 	private boolean configured;
 
 	/**
@@ -44,7 +43,7 @@ public class Connector extends JDialog {
 		setAlwaysOnTop(true);
 		setResizable(false);
 		
-		setBounds(100, 100, 316, 400);
+		setBounds(100, 100, 316, 325);
 		setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
 		getContentPane().setLayout(new BorderLayout());
 		contentPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
@@ -89,33 +88,38 @@ public class Connector extends JDialog {
 		JLabel lblNewLabel_1 = new JLabel("Nombre de Usuario");
 		
 		JLabel lblNewLabel_2 = new JLabel("Contraseña");
-		
-		txtDbName = new JTextField();
-		txtDbName.setToolTipText("Nombre de la base de datos");
-		txtDbName.setColumns(10);
-		
-		JLabel lblNewLabel_3 = new JLabel("Nombre de la Base de Datos");
 		GroupLayout gl_contentPanel = new GroupLayout(contentPanel);
 		gl_contentPanel.setHorizontalGroup(
 			gl_contentPanel.createParallelGroup(Alignment.LEADING)
 				.addGroup(gl_contentPanel.createSequentialGroup()
 					.addGap(28)
 					.addGroup(gl_contentPanel.createParallelGroup(Alignment.LEADING)
-						.addComponent(lblNewLabel_3)
+						.addGroup(gl_contentPanel.createSequentialGroup()
+							.addComponent(chckboxEncrypt)
+							.addContainerGap())
 						.addGroup(gl_contentPanel.createParallelGroup(Alignment.LEADING)
-							.addComponent(lblNewLabel_1)
-							.addComponent(txtUserName)
-							.addComponent(lblNewLabel_2)
 							.addGroup(gl_contentPanel.createSequentialGroup()
 								.addComponent(chckboxPort)
 								.addPreferredGap(ComponentPlacement.UNRELATED)
-								.addComponent(txtPort, GroupLayout.DEFAULT_SIZE, 54, Short.MAX_VALUE))
-							.addComponent(chckboxEncrypt)
-							.addComponent(txtServer)
-							.addComponent(lblNewLabel)
-							.addComponent(txtPassword)
-							.addComponent(txtDbName)))
-					.addGap(24))
+								.addComponent(txtPort, GroupLayout.DEFAULT_SIZE, 65, Short.MAX_VALUE)
+								.addGap(24))
+							.addGroup(gl_contentPanel.createSequentialGroup()
+								.addComponent(txtPassword, 238, 238, 238)
+								.addContainerGap())
+							.addGroup(gl_contentPanel.createSequentialGroup()
+								.addComponent(lblNewLabel_2)
+								.addContainerGap())
+							.addGroup(gl_contentPanel.createSequentialGroup()
+								.addComponent(txtUserName, 238, 238, 238)
+								.addContainerGap())
+							.addGroup(gl_contentPanel.createSequentialGroup()
+								.addComponent(lblNewLabel_1)
+								.addContainerGap())
+							.addGroup(gl_contentPanel.createSequentialGroup()
+								.addGroup(gl_contentPanel.createParallelGroup(Alignment.LEADING)
+									.addComponent(txtServer, 238, 238, 238)
+									.addComponent(lblNewLabel))
+								.addGap(24)))))
 		);
 		gl_contentPanel.setVerticalGroup(
 			gl_contentPanel.createParallelGroup(Alignment.LEADING)
@@ -124,10 +128,6 @@ public class Connector extends JDialog {
 					.addComponent(lblNewLabel)
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addComponent(txtServer, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(lblNewLabel_3)
-					.addGap(5)
-					.addComponent(txtDbName, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.UNRELATED)
 					.addComponent(lblNewLabel_1)
 					.addPreferredGap(ComponentPlacement.RELATED)
@@ -136,13 +136,13 @@ public class Connector extends JDialog {
 					.addComponent(lblNewLabel_2)
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addComponent(txtPassword, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-					.addGap(18)
-					.addGroup(gl_contentPanel.createParallelGroup(Alignment.BASELINE)
+					.addPreferredGap(ComponentPlacement.UNRELATED)
+					.addGroup(gl_contentPanel.createParallelGroup(Alignment.TRAILING)
 						.addComponent(chckboxPort)
 						.addComponent(txtPort, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
 					.addPreferredGap(ComponentPlacement.UNRELATED)
 					.addComponent(chckboxEncrypt)
-					.addContainerGap(51, Short.MAX_VALUE))
+					.addContainerGap(98, Short.MAX_VALUE))
 		);
 		contentPanel.setLayout(gl_contentPanel);
 		{
@@ -175,16 +175,15 @@ public class Connector extends JDialog {
 		}
 	}
 	
-	public String getConnectionString() {
+	public ConnectionStringBuilder getConnectionStringBuilder() {
 		return new ConnectionStringBuilder()
 				.withHost(this.txtServer.getText().strip())
-				.withDbName(this.txtDbName.getText().strip())
+				.withDbName("master")
 				.withUserName(this.txtUserName.getText().strip())
 				.withPassword(new String(this.txtPassword.getPassword()).strip())
 				.withPort(Integer.parseInt(this.txtPort.getText().strip()))
 				.withEncrypt(this.chckboxEncrypt.isEnabled())
-				.withTrustServerCertificates(true)
-				.build();
+				.withTrustServerCertificates(true);
 	}
 	
 	public boolean isConfigured() {
