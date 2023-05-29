@@ -10,6 +10,7 @@ public class ConnectionStringBuilder {
   private String userName;
   private String passoword;
   private boolean trustServerCertificates;
+  private boolean integratedSecurity;
 
   public String build() {
     var sb = new StringBuilder(template);
@@ -34,19 +35,41 @@ public class ConnectionStringBuilder {
       sb.append("databaseName=" + this.dbName + ";");
     }
 
-    if (this.userName != null) {
-      sb.append("user=" + this.userName + ";");
-    }
+    if (this.integratedSecurity) {
+      String domainName = System.getenv("USERDOMAIN");
+      sb.append("integratedSecurity=true;");
+      sb.append(String.format("authenticationScheme=JavaKerberos;domain=%s;", domainName));
+    } else {
 
-    if (this.passoword != null) {
-      sb.append("password=" + this.passoword + ";");
-    }
+      if (this.userName != null) {
+        sb.append("user=" + this.userName + ";");
+      }
 
+      if (this.passoword != null) {
+        sb.append("password=" + this.passoword + ";");
+      }
+      
+    }
+    
+    
     if (this.trustServerCertificates) {
       sb.append("trustServerCertificate=true;");
     }
 
     return sb.toString();
+  }
+  
+  public ConnectionStringBuilder copy() {
+	  return new ConnectionStringBuilder()
+			  .withHost(host == null? null : new String(host))
+			  .withInstance(instance == null? null : new String(instance))
+			  .withPort(port)
+			  .withEncrypt(encrypt)
+			  .withDbName(dbName == null? null : new String(dbName))
+			  .withUserName(userName == null? null : new String(userName))
+			  .withPassword(passoword == null? null : new String(passoword))
+			  .withIntegratedSecurity(integratedSecurity)
+			  .withTrustServerCertificates(trustServerCertificates);
   }
   
   public ConnectionStringBuilder withHost(String host) {
@@ -89,6 +112,11 @@ public class ConnectionStringBuilder {
     return this;
   }
 
+  public ConnectionStringBuilder withIntegratedSecurity(boolean integratedSecurity) {
+    this.integratedSecurity = integratedSecurity;
+    return this;
+  }
+  
   public String getHost() {
     return this.host;
   }
@@ -119,5 +147,9 @@ public class ConnectionStringBuilder {
 
   public boolean getTrustServerCertificates() {
     return this.trustServerCertificates;
+  }
+  
+  public boolean getIntegratedSecurity() {
+    return this.integratedSecurity;
   }
 }

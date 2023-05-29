@@ -32,6 +32,7 @@ public class Connector extends JDialog {
 	private JPasswordField txtPassword;
 	private JCheckBox chckboxEncrypt;
 	private JCheckBox chckboxPort;
+	private JCheckBox chckboxIS;
 	private boolean configured;
 
 	/**
@@ -43,7 +44,7 @@ public class Connector extends JDialog {
 		setAlwaysOnTop(true);
 		setResizable(false);
 		
-		setBounds(100, 100, 316, 325);
+		setBounds(100, 100, 316, 365);
 		setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
 		getContentPane().setLayout(new BorderLayout());
 		contentPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
@@ -82,12 +83,24 @@ public class Connector extends JDialog {
 			txtPassword = new JPasswordField();
 			txtPassword.setToolTipText("Contraseña");
 		}
+		{
+			chckboxIS = new JCheckBox("Seguridad Integrada de Windows");
+			chckboxIS.addItemListener(new ItemListener() {
+				public void itemStateChanged(ItemEvent e) {
+					txtUserName.setEnabled(!txtUserName.isEnabled());
+					txtPassword.setEnabled(!txtPassword.isEnabled());
+					txtUserName.revalidate();
+					txtPassword.revalidate();
+				}
+			});
+		}
 		
 		JLabel lblNewLabel = new JLabel("Servidor");
 		
 		JLabel lblNewLabel_1 = new JLabel("Nombre de Usuario");
 		
 		JLabel lblNewLabel_2 = new JLabel("Contraseña");
+		
 		GroupLayout gl_contentPanel = new GroupLayout(contentPanel);
 		gl_contentPanel.setHorizontalGroup(
 			gl_contentPanel.createParallelGroup(Alignment.LEADING)
@@ -95,31 +108,38 @@ public class Connector extends JDialog {
 					.addGap(28)
 					.addGroup(gl_contentPanel.createParallelGroup(Alignment.LEADING)
 						.addGroup(gl_contentPanel.createSequentialGroup()
-							.addComponent(chckboxEncrypt)
+							.addComponent(this.chckboxIS)
 							.addContainerGap())
 						.addGroup(gl_contentPanel.createParallelGroup(Alignment.LEADING)
 							.addGroup(gl_contentPanel.createSequentialGroup()
-								.addComponent(chckboxPort)
-								.addPreferredGap(ComponentPlacement.UNRELATED)
-								.addComponent(txtPort, GroupLayout.DEFAULT_SIZE, 65, Short.MAX_VALUE)
-								.addGap(24))
-							.addGroup(gl_contentPanel.createSequentialGroup()
-								.addComponent(txtPassword, 238, 238, 238)
-								.addContainerGap())
-							.addGroup(gl_contentPanel.createSequentialGroup()
-								.addComponent(lblNewLabel_2)
-								.addContainerGap())
-							.addGroup(gl_contentPanel.createSequentialGroup()
-								.addComponent(txtUserName, 238, 238, 238)
-								.addContainerGap())
-							.addGroup(gl_contentPanel.createSequentialGroup()
 								.addComponent(lblNewLabel_1)
 								.addContainerGap())
-							.addGroup(gl_contentPanel.createSequentialGroup()
+							.addGroup(gl_contentPanel.createParallelGroup(Alignment.LEADING)
+								.addGroup(gl_contentPanel.createSequentialGroup()
+									.addComponent(txtUserName, 238, 238, 238)
+									.addContainerGap())
 								.addGroup(gl_contentPanel.createParallelGroup(Alignment.LEADING)
-									.addComponent(txtServer, 238, 238, 238)
-									.addComponent(lblNewLabel))
-								.addGap(24)))))
+									.addGroup(gl_contentPanel.createSequentialGroup()
+										.addComponent(lblNewLabel_2)
+										.addContainerGap())
+									.addGroup(gl_contentPanel.createParallelGroup(Alignment.LEADING)
+										.addGroup(gl_contentPanel.createSequentialGroup()
+											.addComponent(txtPassword, 238, 238, 238)
+											.addContainerGap())
+										.addGroup(gl_contentPanel.createParallelGroup(Alignment.LEADING)
+											.addGroup(gl_contentPanel.createSequentialGroup()
+												.addComponent(chckboxPort)
+												.addPreferredGap(ComponentPlacement.UNRELATED)
+												.addComponent(txtPort, GroupLayout.DEFAULT_SIZE, 65, Short.MAX_VALUE)
+												.addGap(24))
+											.addGroup(gl_contentPanel.createSequentialGroup()
+												.addComponent(chckboxEncrypt)
+												.addContainerGap())
+											.addGroup(gl_contentPanel.createSequentialGroup()
+												.addGroup(gl_contentPanel.createParallelGroup(Alignment.LEADING)
+													.addComponent(txtServer, 238, 238, 238)
+													.addComponent(lblNewLabel))
+												.addGap(24)))))))))
 		);
 		gl_contentPanel.setVerticalGroup(
 			gl_contentPanel.createParallelGroup(Alignment.LEADING)
@@ -129,6 +149,8 @@ public class Connector extends JDialog {
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addComponent(txtServer, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.UNRELATED)
+					.addComponent(this.chckboxIS)
+					.addPreferredGap(ComponentPlacement.RELATED, 16, Short.MAX_VALUE)
 					.addComponent(lblNewLabel_1)
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addComponent(txtUserName, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
@@ -137,12 +159,12 @@ public class Connector extends JDialog {
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addComponent(txtPassword, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.UNRELATED)
-					.addGroup(gl_contentPanel.createParallelGroup(Alignment.TRAILING)
+					.addGroup(gl_contentPanel.createParallelGroup(Alignment.BASELINE)
 						.addComponent(chckboxPort)
 						.addComponent(txtPort, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
 					.addPreferredGap(ComponentPlacement.UNRELATED)
 					.addComponent(chckboxEncrypt)
-					.addContainerGap(98, Short.MAX_VALUE))
+					.addGap(28))
 		);
 		contentPanel.setLayout(gl_contentPanel);
 		{
@@ -179,10 +201,11 @@ public class Connector extends JDialog {
 		return new ConnectionStringBuilder()
 				.withHost(this.txtServer.getText().strip())
 				.withDbName("master")
+				.withIntegratedSecurity(this.chckboxIS.isSelected())
 				.withUserName(this.txtUserName.getText().strip())
 				.withPassword(new String(this.txtPassword.getPassword()).strip())
 				.withPort(Integer.parseInt(this.txtPort.getText().strip()))
-				.withEncrypt(this.chckboxEncrypt.isEnabled())
+				.withEncrypt(this.chckboxEncrypt.isSelected())
 				.withTrustServerCertificates(true);
 	}
 	
