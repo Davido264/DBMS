@@ -210,7 +210,7 @@ public class TreeView extends JPanel {
 							
 							var partitionsNode = new NeverLeafNode("Particiones");
 							expandedNode.add(partitionsNode);
-							result = operation.executeRaw(String.format(DefaultQuerys.getIndexesQuery, information[1]));
+							result = operation.executeRaw(String.format(DefaultQuerys.getPartitionsQuery, information[1]));
 							var partitions = result.getTable().get("name");
 						
 							for (Object partition : partitions) {
