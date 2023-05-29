@@ -155,13 +155,7 @@ public class TreeView extends JPanel {
 							var tables = result.getTable().get("name");
 						
 							for (Object table : tables) {
-								DefaultMutableTreeNode child = new DefaultMutableTreeNode(table.toString()) {
-									private static final long serialVersionUID = 1L;
-									@Override
-									public boolean isLeaf() {
-										return false;
-									}
-								};
+								DefaultMutableTreeNode child = new NeverLeafNode(table.toString());
 								expandedNode.add(child);
 							}
 						} else if (expandedNode.getLevel() == TABLES_LEVEL) {
@@ -170,7 +164,7 @@ public class TreeView extends JPanel {
 									.split("\\.");
 						
 							
-							var columnsNode = new DefaultMutableTreeNode("Columnas");
+							var columnsNode = new NeverLeafNode("Columnas");
 							expandedNode.add(columnsNode);
 							var result = operation.executeRaw(String.format(DefaultQuerys.getColumnsQuery, information[0], information[1]));
 							var columns = result.getTable().get("name");
@@ -182,7 +176,7 @@ public class TreeView extends JPanel {
 							}
 							
 						
-							var constraitsNode = new DefaultMutableTreeNode("Constraits");
+							var constraitsNode = new NeverLeafNode("Constraits");
 							expandedNode.add(constraitsNode);
 							result = operation.executeRaw(String.format(DefaultQuerys.getConstraitsQuery, information[0], information[1]));
 							var constraits = result.getTable().get("name");
@@ -190,6 +184,38 @@ public class TreeView extends JPanel {
 							for (Object constrait : constraits) {
 								DefaultMutableTreeNode child = new DefaultMutableTreeNode(constrait.toString());
 								constraitsNode.add(child);
+							}
+							
+							
+							var triggersNode = new NeverLeafNode("Triggers");
+							expandedNode.add(triggersNode);
+							result = operation.executeRaw(String.format(DefaultQuerys.getTriggersQuery, information[1]));
+							var triggers = result.getTable().get("name");
+						
+							for (Object trigger : triggers) {
+								DefaultMutableTreeNode child = new DefaultMutableTreeNode(trigger.toString());
+								triggersNode.add(child);
+							}
+
+							
+							var indexesNode = new NeverLeafNode("Índices");
+							expandedNode.add(indexesNode);
+							result = operation.executeRaw(String.format(DefaultQuerys.getIndexesQuery, information[1]));
+							var indexes = result.getTable().get("name");
+						
+							for (Object index : indexes) {
+								DefaultMutableTreeNode child = new DefaultMutableTreeNode(index.toString());
+								indexesNode.add(child);
+							}
+							
+							var partitionsNode = new NeverLeafNode("Particiones");
+							expandedNode.add(partitionsNode);
+							result = operation.executeRaw(String.format(DefaultQuerys.getIndexesQuery, information[1]));
+							var partitions = result.getTable().get("name");
+						
+							for (Object partition : partitions) {
+								DefaultMutableTreeNode child = new DefaultMutableTreeNode(partition.toString());
+								partitionsNode.add(child);
 							}
 							
 						}
@@ -207,13 +233,7 @@ public class TreeView extends JPanel {
 			this.scrollPane.setViewportView(tree);
 			
 			for (Object database : databases) {
-				DefaultMutableTreeNode child = new DefaultMutableTreeNode(database.toString()) {
-					private static final long serialVersionUID = 1L;
-					@Override
-			        public boolean isLeaf() {
-			            return false; // El nodo siempre será tratado como padre 
-			        }
-				};
+				DefaultMutableTreeNode child = new NeverLeafNode(database.toString());
 				root.add(child);
 			}
 			this.parent.setDbName(this.parent.getConnectionStringBuilder().getDbName());
@@ -225,6 +245,15 @@ public class TreeView extends JPanel {
 		}
 	}	
 
-	
+
+	private class NeverLeafNode extends DefaultMutableTreeNode {
+		public NeverLeafNode(String content) {
+			super(content);
+		}
+		@Override
+		public boolean isLeaf() {
+			return false; // El nodo siempre será tratado como padre 
+		}
+	}
 	
 }

@@ -5,6 +5,8 @@ public class DefaultQuerys {
 	public static final String dropDatabaseQuery = "DROP DATABASE %s;";
 	public static final String getDatabasesQuery = "SELECT name FROM sys.databases WHERE database_id > 4;";
 	public static final String getColumnsQuery = "SELECT CONCAT(column_name,'(',data_type,')') as name FROM information_schema.columns WHERE table_schema = '%s' AND table_name = '%s';";
+	public static final String getTriggersQuery = "SELECT name FROM sys.triggers WHERE parent_id = OBJECT_ID('%s');";
+	public static final String getIndexesQuery = "SELECT name FROM sys.indexes WHERE object_id = OBJECT_ID('%s');";
 	public static final String getConstraitsQuery = "SELECT CONCAT(constraint_name, '(', constraint_type, ')') as name FROM information_schema.table_constraints WHERE table_schema = '%s' AND table_name = '%s';";
 	public static final String getTablesQuery = """
 SELECT CONCAT(s.name, '.', t.name) AS name 
@@ -18,5 +20,13 @@ INNER JOIN sys.schemas s ON v.schema_id = s.schema_id
 WHERE v.is_ms_shipped = 0;
 """;
 	
+	
+	public static final String getPartitionsQuery = """
+SELECT p.name AS name
+FROM sys.partition_functions f
+INNER JOIN sys.partition_schemes s ON f.function_id = s.function_id
+INNER JOIN sys.partition_range_values r ON s.function_id = r.function_id
+INNER JOIN sys.partitions p ON p.partition_number = r.boundary_id AND p.object_id = OBJECT_ID('%s');
+""";
 	
 }
