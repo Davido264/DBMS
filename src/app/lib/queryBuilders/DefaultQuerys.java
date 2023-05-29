@@ -21,12 +21,6 @@ WHERE v.is_ms_shipped = 0;
 """;
 	
 	
-	public static final String getPartitionsQuery = """
-SELECT p.name AS name
-FROM sys.partition_functions f
-INNER JOIN sys.partition_schemes s ON f.function_id = s.function_id
-INNER JOIN sys.partition_range_values r ON s.function_id = r.function_id
-INNER JOIN sys.partitions p ON p.partition_number = r.boundary_id AND p.object_id = OBJECT_ID('%s');
-""";
+	public static final String getPartitionsQuery = "SELECT partition_id as name FROM sys.partitions WHERE object_id = OBJECT_ID('%s');";
 	
 }
