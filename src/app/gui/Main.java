@@ -94,10 +94,9 @@ public class Main {
 							.addGap(10)
 							.addComponent(dbNameLabel, GroupLayout.DEFAULT_SIZE, 120, Short.MAX_VALUE))
 						.addGroup(gl_panel.createSequentialGroup()
-							.addComponent(btnNewButton_1, GroupLayout.PREFERRED_SIZE, 89, GroupLayout.PREFERRED_SIZE)
+							.addComponent(btnNewButton_1, GroupLayout.PREFERRED_SIZE, 99, GroupLayout.PREFERRED_SIZE)
 							.addPreferredGap(ComponentPlacement.RELATED)
-							.addComponent(btnNewButton, GroupLayout.PREFERRED_SIZE, 87, GroupLayout.PREFERRED_SIZE)
-							.addPreferredGap(ComponentPlacement.RELATED, 20, Short.MAX_VALUE)))
+							.addComponent(btnNewButton, GroupLayout.DEFAULT_SIZE, 97, Short.MAX_VALUE)))
 					.addContainerGap())
 		);
 		gl_panel.setVerticalGroup(
@@ -112,7 +111,7 @@ public class Main {
 						.addComponent(btnNewButton_1)
 						.addComponent(btnNewButton))
 					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(treeView, GroupLayout.DEFAULT_SIZE, 496, Short.MAX_VALUE)
+					.addComponent(treeView, GroupLayout.DEFAULT_SIZE, 525, Short.MAX_VALUE)
 					.addContainerGap())
 		);
 		

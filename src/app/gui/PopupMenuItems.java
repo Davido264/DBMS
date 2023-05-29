@@ -3,6 +3,7 @@ package app.gui;
 import app.lib.connector.SQLOperation;
 import app.lib.queryBuilders.DefaultQuerys;
 import app.lib.queryBuilders.Select;
+import app.lib.queryBuilders.Drop;
 import app.lib.result.ResultFactory;
 
 import java.awt.Cursor;
@@ -86,8 +87,27 @@ public class PopupMenuItems {
 	}
 	
 	public static void fillDatabasePopupMenu(JPopupMenu popupMenu, Main parent, String database) {
+		JMenuItem menuItem1 = new JMenuItem("Eliminar Base de datos");
+		menuItem1.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent event) {
+            	parent.setDbName("master");
+				try (var sqlOperation = new SQLOperation(parent.getConnectionStringBuilder().build())) {
+					parent.getFrame().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+					var query = Drop.database(database).generateQuery();
+					var result = sqlOperation.executeRaw(query);
+					parent.getResultReader().loadResult(result);
+					parent.getTreeView().loadDatabaseObjects();
+				} catch(Exception ex) {
+					parent.getResultReader().loadResult(ResultFactory.fromException(ex));
+				} finally {
+					parent.getFrame().setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+				}
+            } 
+		});
+		
 		popupMenu.add(createQueryItem(parent,database));
 		popupMenu.add(createTablesItem(parent,database));
+		popupMenu.add(menuItem1);
 	}
 	
 	public static void fillTablesPopupMenu(JPopupMenu popupMenu, Main parent, String table, String database) {
@@ -107,9 +127,30 @@ public class PopupMenuItems {
 				}
             } 
 		});
+
+		
+		JMenuItem menuItem2 = new JMenuItem("Eliminar Tabla");
+		menuItem2.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent event) {
+				try (var sqlOperation = new SQLOperation(parent.getConnectionStringBuilder().build())) {
+					parent.getFrame().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+					var query = Drop.table(table).generateQuery();
+					var result = sqlOperation.executeRaw(query);
+					parent.getResultReader().loadResult(result);
+					parent.getTreeView().loadDatabaseObjects();
+				} catch(Exception ex) {
+					parent.getResultReader().loadResult(ResultFactory.fromException(ex));
+				} finally {
+					parent.getFrame().setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+				}
+            } 
+		});
+		
+		
 		
 		popupMenu.add(menuItem1);
 		popupMenu.add(createQueryItem(parent,database));
 		popupMenu.add(createTablesItem(parent,database));
+		popupMenu.add(menuItem2);
 	}
 }

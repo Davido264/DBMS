@@ -128,7 +128,7 @@ public class TestQueryBuilders {
     var expected = "DROP TABLE Personas;";
   
     var tableName = "Personas";
-    var selectQuery = new Drop(tableName).generateQuery();
+    var selectQuery = Drop.table(tableName).generateQuery();
 
     Utils.print("DROP Table");
 
