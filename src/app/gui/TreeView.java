@@ -33,9 +33,10 @@ public class TreeView extends JPanel {
 	private JScrollPane scrollPane;
 	private JPopupMenu popupMenu;
 	final int ROOT_LEVEL = 0;
-	final int DATABASE_LEVEL = 1;
-	final int TABLES_LEVEL = 2;
-	final int COLUMNS_LEVEL = 4;
+	final int DATABASE_LEVEL = 2;
+	final int TABLES_LEVEL = 3;
+	final int COLUMNS_LEVEL = 5;
+	final int USERS_LEVEL = 2;
 	
 	
 	/**
@@ -232,10 +233,25 @@ public class TreeView extends JPanel {
 			});
 			this.scrollPane.setViewportView(tree);
 			
+			var databaseNode = new NeverLeafNode("Bases de datos");
+			root.add(databaseNode);
+			
 			for (Object database : databases) {
 				DefaultMutableTreeNode child = new NeverLeafNode(database.toString());
-				root.add(child);
+				databaseNode.add(child);
 			}
+			
+			var usersNode = new NeverLeafNode("Usuarios");
+			
+			root.add(usersNode);
+			result = operation.executeRaw(DefaultQuerys.getUsersQuery);
+			var users = result.getTable().get("name");
+						
+			for (Object user : users) {
+				DefaultMutableTreeNode child = new DefaultMutableTreeNode(user.toString());
+				usersNode.add(child);
+			}
+			
 			this.parent.setDbName(this.parent.getConnectionStringBuilder().getDbName());
 			
 		} catch(Exception e) {

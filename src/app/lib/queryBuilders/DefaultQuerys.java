@@ -8,6 +8,7 @@ public class DefaultQuerys {
 	public static final String getTriggersQuery = "SELECT name FROM sys.triggers WHERE parent_id = OBJECT_ID('%s');";
 	public static final String getIndexesQuery = "SELECT name FROM sys.indexes WHERE object_id = OBJECT_ID('%s');";
 	public static final String getConstraitsQuery = "SELECT CONCAT(constraint_name, '(', constraint_type, ')') as name FROM information_schema.table_constraints WHERE table_schema = '%s' AND table_name = '%s';";
+	public static final String getUsersQuery = "SELECT name FROM sys.sysusers WHERE issqluser = 1 AND hasdbaccess = 1;";
 	public static final String getTablesQuery = """
 SELECT CONCAT(s.name, '.', t.name) AS name 
 FROM sys.tables t
