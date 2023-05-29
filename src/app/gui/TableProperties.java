@@ -268,11 +268,11 @@ public class TableProperties extends JPanel {
 			ArrayList<InlineConstraints> constraits = new ArrayList<>(2);
 			
 			
-			if ((Boolean) model.getValueAt(i, 3)) {
+			if (model.getValueAt(i, 3) != null && (Boolean) model.getValueAt(i, 3)) {
 				constraits.add(InlineConstraints.NOT_NULL);
 			}
 			
-			if ((Boolean) model.getValueAt(i, 4)) {
+			if (model.getValueAt(i, 4) != null && (Boolean) model.getValueAt(i, 4)) {
 				constraits.add(InlineConstraints.PRIMARY_KEY);
 			}
 
