@@ -95,7 +95,7 @@ public class TreeView extends JPanel {
 
 	                    if (level == ROOT_LEVEL) {
 	                    	PopupMenuItems.fillRootPopupMenu(popupMenu, parent);
-	                    } else if (level == DATABASE_LEVEL) {
+	                    } else if (level == DATABASE_LEVEL && !((DefaultMutableTreeNode) selectedNode.getParent()).getUserObject().toString().equals("Usuarios")) {
 	                    	PopupMenuItems.fillDatabasePopupMenu(popupMenu, parent, selectedNode.getUserObject().toString());
 	                    } else if (level == TABLES_LEVEL) {
 	                    	DefaultMutableTreeNode parentNode = selectedNode;

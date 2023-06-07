@@ -23,5 +23,7 @@ WHERE v.is_ms_shipped = 0;
 	
 	
 	public static final String getPartitionsQuery = "SELECT partition_id as name FROM sys.partitions WHERE object_id = OBJECT_ID('%s');";
+
+	public static final String getPermissionsOverATableQuery = "SELECT DISTINCT(PERMISSION_NAME) FROM fn_my_permissions('%s', 'OBJECT');";
 	
 }

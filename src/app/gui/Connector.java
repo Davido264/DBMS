@@ -54,6 +54,11 @@ public class Connector extends JDialog {
 		setAlwaysOnTop(true);
 		setResizable(false);
 
+		JLabel lblUserName = new JLabel("Nombre de Usuario");
+		JLabel lblPassword = new JLabel("Contraseña");
+		lblUserName.setEnabled(false);
+		lblPassword.setEnabled(false);
+
 		setBounds(100, 100, 316, 365);
 		setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
 		getContentPane().setLayout(new BorderLayout());
@@ -70,6 +75,7 @@ public class Connector extends JDialog {
 			txtUserName = new JTextField();
 			txtUserName.setToolTipText("Nombre de Usuario de la base de datos");
 			txtUserName.setColumns(10);
+			txtUserName.setEnabled(false);
 		}
 		{
 			this.loadKnownHosts();
@@ -94,24 +100,26 @@ public class Connector extends JDialog {
 		{
 			txtPassword = new JPasswordField();
 			txtPassword.setToolTipText("Contraseña");
+			txtPassword.setEnabled(false);
 		}
 		{
 			chckboxIS = new JCheckBox("Seguridad Integrada de Windows");
+			chckboxIS.setSelected(true);
 			chckboxIS.addItemListener(new ItemListener() {
 				public void itemStateChanged(ItemEvent e) {
 					txtUserName.setEnabled(!txtUserName.isEnabled());
 					txtPassword.setEnabled(!txtPassword.isEnabled());
+					lblUserName.setEnabled(!lblUserName.isEnabled());
+					lblPassword.setEnabled(!lblPassword.isEnabled());
 					txtUserName.revalidate();
+					lblUserName.revalidate();
 					txtPassword.revalidate();
+					lblPassword.revalidate();
 				}
 			});
 		}
 
 		JLabel lblNewLabel = new JLabel("Servidor");
-
-		JLabel lblNewLabel_1 = new JLabel("Nombre de Usuario");
-
-		JLabel lblNewLabel_2 = new JLabel("Contraseña");
 
 		GroupLayout gl_contentPanel = new GroupLayout(contentPanel);
 		gl_contentPanel.setHorizontalGroup(gl_contentPanel.createParallelGroup(Alignment.LEADING)
@@ -120,14 +128,14 @@ public class Connector extends JDialog {
 						.addGroup(
 								gl_contentPanel.createSequentialGroup().addComponent(this.chckboxIS).addContainerGap())
 						.addGroup(gl_contentPanel.createParallelGroup(Alignment.LEADING)
-								.addGroup(gl_contentPanel.createSequentialGroup().addComponent(lblNewLabel_1)
+								.addGroup(gl_contentPanel.createSequentialGroup().addComponent(lblUserName)
 										.addContainerGap())
 								.addGroup(gl_contentPanel.createParallelGroup(Alignment.LEADING)
 										.addGroup(gl_contentPanel.createSequentialGroup()
 												.addComponent(txtUserName, 238, 238, 238).addContainerGap())
 										.addGroup(gl_contentPanel.createParallelGroup(Alignment.LEADING)
 												.addGroup(gl_contentPanel.createSequentialGroup()
-														.addComponent(lblNewLabel_2).addContainerGap())
+														.addComponent(lblPassword).addContainerGap())
 												.addGroup(gl_contentPanel.createParallelGroup(Alignment.LEADING)
 														.addGroup(gl_contentPanel.createSequentialGroup()
 																.addComponent(txtPassword, 238, 238, 238)
@@ -153,11 +161,11 @@ public class Connector extends JDialog {
 				.addComponent(txtServer, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
 						GroupLayout.PREFERRED_SIZE)
 				.addPreferredGap(ComponentPlacement.UNRELATED).addComponent(this.chckboxIS)
-				.addPreferredGap(ComponentPlacement.RELATED, 16, Short.MAX_VALUE).addComponent(lblNewLabel_1)
+				.addPreferredGap(ComponentPlacement.RELATED, 16, Short.MAX_VALUE).addComponent(lblUserName)
 				.addPreferredGap(ComponentPlacement.RELATED)
 				.addComponent(txtUserName, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
 						GroupLayout.PREFERRED_SIZE)
-				.addPreferredGap(ComponentPlacement.UNRELATED).addComponent(lblNewLabel_2)
+				.addPreferredGap(ComponentPlacement.UNRELATED).addComponent(lblPassword)
 				.addPreferredGap(ComponentPlacement.RELATED)
 				.addComponent(
 						txtPassword, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
@@ -199,16 +207,15 @@ public class Connector extends JDialog {
 	}
 
 	public ConnectionStringBuilder getConnectionStringBuilder() {
-		String host = (this.txtServer.getSelectedItem() != null)? this.txtServer.getSelectedItem().toString().strip() : "";
-		
-		return new ConnectionStringBuilder().withHost(host)
-				.withDbName("master")
+		String host = (this.txtServer.getSelectedItem() != null) ? this.txtServer.getSelectedItem().toString().strip()
+				: "";
+
+		return new ConnectionStringBuilder().withHost(host).withDbName("master")
 				.withUserName(this.txtUserName.getText().strip())
 				.withPassword(new String(this.txtPassword.getPassword()).strip())
 				.withIntegratedSecurity(this.chckboxIS.isSelected())
 				.withPort(Integer.parseInt(this.txtPort.getText().strip()))
-				.withEncrypt(this.chckboxEncrypt.isSelected())
-				.withTrustServerCertificates(true);
+				.withEncrypt(this.chckboxEncrypt.isSelected()).withTrustServerCertificates(true);
 	}
 
 	private void loadKnownHosts() {
@@ -244,7 +251,7 @@ public class Connector extends JDialog {
 		if (this.txtServer.getSelectedItem() == null) {
 			return;
 		}
-		
+
 		this.hosts.add(this.txtServer.getSelectedItem().toString().strip());
 		String localAppDataPath = System.getenv("LOCALAPPDATA");
 		String filePath = Path.of(localAppDataPath, "Proyecto-DBMS", "known_hosts").toAbsolutePath().toString();
