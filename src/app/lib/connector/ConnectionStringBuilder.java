@@ -36,9 +36,7 @@ public class ConnectionStringBuilder {
     }
 
     if (this.integratedSecurity) {
-      String domainName = System.getenv("USERDOMAIN");
       sb.append("integratedSecurity=true;");
-      sb.append(String.format("authenticationScheme=JavaKerberos;domain=%s;", domainName));
     } else {
 
       if (this.userName != null) {
