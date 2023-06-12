@@ -17,6 +17,14 @@ public class Drop implements QueryBuilder {
 	  return new Drop(triggerName,DropType.TRIGGER);
   }
   
+  public static Drop user(String username) {
+	  return new Drop(username,DropType.USER);
+  }
+  
+  public static Drop login(String login) {
+	  return new Drop(login,DropType.LOGIN);
+  }
+  
   private Drop(String tableName, DropType type) {
     this.tableName = tableName;
     this.type = type;
@@ -30,7 +38,7 @@ public class Drop implements QueryBuilder {
   
   
   private enum DropType {
-	  TABLE,DATABASE,TRIGGER;
+	  TABLE,DATABASE,TRIGGER,USER,LOGIN;
   }
   
 }

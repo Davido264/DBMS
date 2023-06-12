@@ -1,30 +1,30 @@
 package app.lib.queryBuilders;
 
-public class Alter implements QueryBuilder {
+public class AlterTable implements QueryBuilder {
   private final String template = "ALTER TABLE %s %s;";
   private String tableName;
   private AlterAction action;
-  private final static Alter _instance = new Alter();
+  private final static AlterTable _instance = new AlterTable();
 
-  public static Alter add(String tableName, ColumnEntry columnEntry) {
-    return new Alter(tableName, _instance.new AlterAction(Action.ADD, columnEntry));
+  public static AlterTable add(String tableName, ColumnEntry columnEntry) {
+    return new AlterTable(tableName, _instance.new AlterAction(Action.ADD, columnEntry));
   }
 
-  public static Alter drop(String tableName, String columnName) {
-    return new Alter(tableName, _instance.new AlterAction(Action.DROP, columnName));
+  public static AlterTable drop(String tableName, String columnName) {
+    return new AlterTable(tableName, _instance.new AlterAction(Action.DROP, columnName));
   }
 
-  public static Alter rename(String tableName, String columnName, String newColumnName) {
-    return new Alter(tableName, _instance.new AlterAction(Action.RENAME, columnName, newColumnName));
+  public static AlterTable rename(String tableName, String columnName, String newColumnName) {
+    return new AlterTable(tableName, _instance.new AlterAction(Action.RENAME, columnName, newColumnName));
   }
 
-  public static Alter alter(String tableName, ColumnEntry columnEntry) {
-    return new Alter(tableName, _instance.new AlterAction(Action.ALTER, columnEntry));
+  public static AlterTable alter(String tableName, ColumnEntry columnEntry) {
+    return new AlterTable(tableName, _instance.new AlterAction(Action.ALTER, columnEntry));
   }
 
-  private Alter() {}
+  private AlterTable() {}
   
-  private Alter(String tableName, AlterAction action) {
+  private AlterTable(String tableName, AlterAction action) {
     this.tableName = tableName;
     this.action = action;
   }

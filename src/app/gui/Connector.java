@@ -76,6 +76,8 @@ public class Connector extends JDialog {
 			txtUserName.setToolTipText("Nombre de Usuario de la base de datos");
 			txtUserName.setColumns(10);
 			txtUserName.setEnabled(false);
+			String username = String.format("%s\\%s", System.getenv("USERDOMAIN"),System.getenv("USERNAME"));
+			txtUserName.setText(username);
 		}
 		{
 			this.loadKnownHosts();

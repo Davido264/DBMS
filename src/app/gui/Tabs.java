@@ -32,6 +32,7 @@ public class Tabs extends JPanel {
 	private Main parent;
 	private int editorTabsCount;
 	private int tableTabsCount;
+	private int userTabsCount;
 
 	/**
 	 * Create the panel.
@@ -63,15 +64,17 @@ public class Tabs extends JPanel {
 
 		                Component component = tabbedPane.getComponentAt(tabIndex);
 		                if (component instanceof Editor) {
-		                	System.out.println("foo");
 		                	editorTabsCount--;
 		                }
         	
 		                if (component instanceof TableProperties) {
-		                	System.out.println("bar");
 		                	tableTabsCount--;
 		                }
-		                	
+		               
+		                if (component instanceof UserEditor) {
+		                	userTabsCount--;
+		                }
+		                
 		                removeTabAt(tabIndex);
 		            }
 		        });
@@ -120,6 +123,13 @@ public class Tabs extends JPanel {
 		TableProperties tableProperties = new TableProperties(this.parent,edit,c);
 		String title = "Editor de Tablas" + (this.tableTabsCount == 0 ? "" : String.format("(%d)", this.tableTabsCount));
 		tabbedPane.addTab(title, new JScrollPane(tableProperties));
+		this.tableTabsCount++;
+	}
+	
+	public void createNewUserTab(ConnectionStringBuilder c, String userName) {
+		UserEditor userEditor = new UserEditor(this.parent,true,null,null,c);
+		String title = "Editor de Usuarios" + (this.userTabsCount == 0 ? "" : String.format("(%d)", this.userTabsCount));
+		tabbedPane.addTab(title, new JScrollPane(userEditor));
 		this.tableTabsCount++;
 	}
 	

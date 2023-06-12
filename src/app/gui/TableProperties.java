@@ -19,7 +19,7 @@ import javax.swing.text.DocumentFilter.FilterBypass;
 import javax.swing.ComboBoxEditor;
 import app.lib.queryBuilders.SQLServerTypes;
 import app.lib.result.ResultFactory;
-import app.lib.queryBuilders.Create;
+import app.lib.queryBuilders.CreateTable;
 import app.lib.queryBuilders.InlineConstraints;
 import app.lib.connector.ConnectionStringBuilder;
 import app.lib.connector.SQLOperation;
@@ -289,7 +289,7 @@ public class TableProperties extends JPanel {
 	
 	
 	public void executeCreateTable() {
-		Create generator = new Create(this.textField.getText(),this.getColumnsFromEditor());
+		CreateTable generator = new CreateTable(this.textField.getText(),this.getColumnsFromEditor());
 		String command = generator.generateQuery();
 		try (var operation = new SQLOperation(this.conStrGenerator.build())) {
 			this.parent.getFrame().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));

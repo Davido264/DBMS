@@ -31,7 +31,7 @@ public class TestQueryBuilders {
     columns[3] = new ColumnEntry("Nacimiento", SQLServerTypes.DATE);
     columns[4] = new ColumnEntry("Genero", SQLServerTypes.CHAR.withLengt(1));
 
-    var createQuery = new Create(tablename,columns).generateQuery();
+    var createQuery = new CreateTable(tablename,columns).generateQuery();
 
     Utils.print("CREATE Without constraints");
 
@@ -53,7 +53,7 @@ public class TestQueryBuilders {
     columns[3] = new ColumnEntry("Nacimiento", SQLServerTypes.DATE);
     columns[4] = new ColumnEntry("Genero", SQLServerTypes.CHAR.withLengt(1));
 
-    var createQuery = new Create(tablename,columns).generateQuery();
+    var createQuery = new CreateTable(tablename,columns).generateQuery();
 
     Utils.print("CREATE With constraints");
 
@@ -143,7 +143,7 @@ public class TestQueryBuilders {
     var expected = "ALTER TABLE Personas ADD Email VARCHAR(100);";
   
     var tableName = "Personas";
-    var selectQuery = Alter.add(tableName, new ColumnEntry("Email", SQLServerTypes.VARCHAR.withLengt(100))).generateQuery();
+    var selectQuery = AlterTable.add(tableName, new ColumnEntry("Email", SQLServerTypes.VARCHAR.withLengt(100))).generateQuery();
 
     Utils.print("ALTER TABLE ADD... ");
 
@@ -158,7 +158,7 @@ public class TestQueryBuilders {
     var expected = "ALTER TABLE Personas DROP Email;";
   
     var tableName = "Personas";
-    var selectQuery = Alter.drop(tableName, "Email").generateQuery();
+    var selectQuery = AlterTable.drop(tableName, "Email").generateQuery();
 
     Utils.print("ALTER TABLE DROP... ");
 
@@ -173,7 +173,7 @@ public class TestQueryBuilders {
     var expected = "ALTER TABLE Personas RENAME Email TO Email2;";
   
     var tableName = "Personas";
-    var selectQuery = Alter.rename(tableName, "Email", "Email2").generateQuery();
+    var selectQuery = AlterTable.rename(tableName, "Email", "Email2").generateQuery();
 
     Utils.print("ALTER TABLE RENAME ... TO ...");
 
@@ -188,7 +188,7 @@ public class TestQueryBuilders {
     var expected = "ALTER TABLE Personas ALTER COLUMN Email VARCHAR(50);";
   
     var tableName = "Personas";
-    var selectQuery = Alter.alter(tableName, new ColumnEntry("Email", SQLServerTypes.VARCHAR.withLengt(50))).generateQuery();
+    var selectQuery = AlterTable.alter(tableName, new ColumnEntry("Email", SQLServerTypes.VARCHAR.withLengt(50))).generateQuery();
 
     Utils.print("ALTER TABLE ALTER ...");
 

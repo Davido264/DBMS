@@ -33,6 +33,7 @@ public class TreeView extends JPanel {
 	private JScrollPane scrollPane;
 	private JPopupMenu popupMenu;
 	final int ROOT_LEVEL = 0;
+	final int SECTION_LEVEL = 1;
 	final int DATABASE_LEVEL = 2;
 	final int TABLES_LEVEL = 3;
 	final int COLUMNS_LEVEL = 5;
@@ -95,8 +96,16 @@ public class TreeView extends JPanel {
 
 	                    if (level == ROOT_LEVEL) {
 	                    	PopupMenuItems.fillRootPopupMenu(popupMenu, parent);
+	                    } else if (level == SECTION_LEVEL) {
+	                    	if (((DefaultMutableTreeNode) selectedNode).getUserObject().toString().equals("Usuarios"))  {
+	                    		PopupMenuItems.fillUsersSectionPopupMenu(popupMenu,parent);
+	                    	} else {
+	                    		PopupMenuItems.fillDatabaseSectionPopupMenu(popupMenu,parent);
+	                    	}
 	                    } else if (level == DATABASE_LEVEL && !((DefaultMutableTreeNode) selectedNode.getParent()).getUserObject().toString().equals("Usuarios")) {
 	                    	PopupMenuItems.fillDatabasePopupMenu(popupMenu, parent, selectedNode.getUserObject().toString());
+	                    } else if (level == DATABASE_LEVEL) {
+	                    	PopupMenuItems.fillUsersPopupMenu(popupMenu,parent,selectedNode.getUserObject().toString());
 	                    } else if (level == TABLES_LEVEL) {
 	                    	DefaultMutableTreeNode parentNode = selectedNode;
 	                    	while (parentNode.getLevel() > DATABASE_LEVEL) {
@@ -113,23 +122,6 @@ public class TreeView extends JPanel {
 	            }
 	        });
 			
-			this.tree.addTreeSelectionListener(new TreeSelectionListener() {
-				public void valueChanged(TreeSelectionEvent e) {
-	                TreePath path = e.getPath();
-	                DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) path.getLastPathComponent();
-	                
-	                if (selectedNode.getLevel() == ROOT_LEVEL) {
-	                	return;
-	                }
-	                
-	                while (selectedNode.getLevel() > DATABASE_LEVEL) {
-	                	selectedNode = (DefaultMutableTreeNode) selectedNode.getParent();
-	                }
-	               
-	                String parentText = selectedNode.getUserObject().toString();
-	                parent.setDbName(parentText);
-				}
-			});
 			
 			this.tree.addTreeWillExpandListener(new TreeWillExpandListener() {
 				public void treeWillCollapse(TreeExpansionEvent event) {}
@@ -146,8 +138,9 @@ public class TreeView extends JPanel {
 	                }
 	               
 	                String parentText = parentNode.getUserObject().toString();
-	                parent.setDbName(parentText);
-					String conStr = parent.getConnectionStringBuilder().build();
+					String conStr = parent.getConnectionStringBuilder()
+							.withDbName(parentText)
+							.build();
 					
 					try (var operation = new SQLOperation(conStr)) {
 						parent.getFrame().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
@@ -251,8 +244,6 @@ public class TreeView extends JPanel {
 				DefaultMutableTreeNode child = new DefaultMutableTreeNode(user.toString());
 				usersNode.add(child);
 			}
-			
-			this.parent.setDbName(this.parent.getConnectionStringBuilder().getDbName());
 			
 		} catch(Exception e) {
 			this.parent.getResultReader().loadResult(ResultFactory.fromException(e));

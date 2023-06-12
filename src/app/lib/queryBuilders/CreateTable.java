@@ -1,11 +1,11 @@
 package app.lib.queryBuilders;
 
-public class Create implements QueryBuilder {
+public class CreateTable implements QueryBuilder {
   private final String template = "CREATE TABLE %s(%s);";
   private String tableName;
   private ColumnEntry[] columns;
 
-  public Create(String tableName, ColumnEntry... columns) {
+  public CreateTable(String tableName, ColumnEntry... columns) {
     this.tableName = tableName;
     this.columns = columns;
   }
