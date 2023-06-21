@@ -20,10 +20,12 @@ FROM sys.views v
 INNER JOIN sys.schemas s ON v.schema_id = s.schema_id
 WHERE v.is_ms_shipped = 0;
 """;
-	
-	
+		
 	public static final String getPartitionsQuery = "SELECT partition_id as name FROM sys.partitions WHERE object_id = OBJECT_ID('%s');";
 
 	public static final String getPermissionsOverATableQuery = "SELECT DISTINCT(PERMISSION_NAME) FROM fn_my_permissions('%s', 'OBJECT');";
+	
+	public static final String getRolesQuery = "SELECT name AS name FROM sys.server_principals WHERE type = 'R' AND is_disabled <> 1;";
+	public static final String getDBRolesQuery = "SELECT name AS name FROM sys.database_principals WHERE type = 'R';";
 	
 }

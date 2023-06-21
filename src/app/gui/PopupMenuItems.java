@@ -51,9 +51,9 @@ public class PopupMenuItems {
 		menuItem.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent event) {
             	if (databaseName == null) {
-            		parent.getTabs().createNewUserTab(parent.getConnectionStringBuilder().copy(),"");
+            		parent.getTabs().createNewUserTab(parent.getConnectionStringBuilder().copy().withIntegratedSecurity(true),"");
             	} else {
-            		parent.getTabs().createNewUserTab(parent.getConnectionStringBuilder().copy().withDbName(databaseName),"");
+            		parent.getTabs().createNewUserTab(parent.getConnectionStringBuilder().copy().withDbName(databaseName).withIntegratedSecurity(true),"");
             	}
             }
 		});

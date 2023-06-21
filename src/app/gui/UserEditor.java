@@ -23,6 +23,7 @@ import java.awt.event.ActionEvent;
 import app.lib.connector.SQLOperation;
 import app.lib.connector.ConnectionStringBuilder;
 import app.lib.queryBuilders.AlterUser;
+import app.lib.queryBuilders.AlterServerRole;
 import app.lib.queryBuilders.DefaultQuerys;
 import app.lib.queryBuilders.Login;
 import app.lib.queryBuilders.User;
@@ -32,9 +33,12 @@ import app.lib.result.Status;
 
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.util.ArrayList;
+
 import javax.swing.JComboBox;
 import java.awt.event.ItemListener;
 import java.awt.event.ItemEvent;
+import javax.swing.JTabbedPane;
 
 public class UserEditor extends JPanel {
 	private JTextField textField;
@@ -45,16 +49,17 @@ public class UserEditor extends JPanel {
 	private String user;
 	private String password;
 	private JComboBox dbcBox;
-	private JCheckBox chckbxRead;
-	private JCheckBox chckbxWrite;
-	private JCheckBox chckbxAdmin;
 	private boolean editUsername;
 	private boolean editPassword;
 	private boolean newUser;
+	private JTable serverRolesTable;
+	private JPanel panel_1;
+	private JTable dbRolesTable;
 
 	/**
 	 * Create the panel.
 	 */
+	@SuppressWarnings("serial")
 	public UserEditor(Main parent, boolean newUser, String username, String password,
 			ConnectionStringBuilder conStrGenerator) {
 		this.user = username == null ? "" : username;
@@ -118,14 +123,14 @@ public class UserEditor extends JPanel {
 		});
 		this.dbcBox.setEnabled(newUser);
 
-		this.chckbxRead = new JCheckBox("Lectura");
-		this.chckbxWrite = new JCheckBox("Escritura");
-		this.chckbxAdmin = new JCheckBox("Administrador");
+		JTabbedPane tabbedPane = new JTabbedPane(JTabbedPane.TOP);
 
 		GroupLayout groupLayout = new GroupLayout(this);
-		groupLayout
-				.setHorizontalGroup(groupLayout.createParallelGroup(Alignment.LEADING)
-						.addGroup(groupLayout.createSequentialGroup().addContainerGap()
+		groupLayout.setHorizontalGroup(groupLayout.createParallelGroup(Alignment.TRAILING).addGroup(groupLayout
+				.createSequentialGroup().addContainerGap()
+				.addGroup(groupLayout.createParallelGroup(Alignment.TRAILING)
+						.addComponent(tabbedPane, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 468, Short.MAX_VALUE)
+						.addGroup(groupLayout.createSequentialGroup()
 								.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
 										.addGroup(groupLayout.createParallelGroup(Alignment.LEADING, false)
 												.addComponent(dbcBox, 0, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
@@ -134,18 +139,14 @@ public class UserEditor extends JPanel {
 														Short.MAX_VALUE)
 												.addComponent(textField))
 										.addComponent(lblNewLabel))
-								.addPreferredGap(ComponentPlacement.RELATED, 168, Short.MAX_VALUE)
+								.addPreferredGap(ComponentPlacement.RELATED, 158, Short.MAX_VALUE)
 								.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
 										.addGroup(groupLayout.createSequentialGroup().addComponent(lblNewLabel_3)
 												.addPreferredGap(ComponentPlacement.RELATED).addComponent(loginName)
 												.addGap(1))
-										.addGroup(groupLayout.createSequentialGroup().addGap(10)
-												.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
-														.addComponent(chckbxRead).addComponent(chckbxWrite)
-														.addComponent(chckbxAdmin)))
 										.addComponent(btnNewButton, Alignment.TRAILING, GroupLayout.PREFERRED_SIZE, 97,
-												GroupLayout.PREFERRED_SIZE))
-								.addContainerGap()));
+												GroupLayout.PREFERRED_SIZE))))
+				.addContainerGap()));
 		groupLayout.setVerticalGroup(groupLayout.createParallelGroup(Alignment.LEADING).addGroup(groupLayout
 				.createSequentialGroup().addContainerGap()
 				.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
@@ -153,24 +154,88 @@ public class UserEditor extends JPanel {
 								.addComponent(loginName))
 						.addComponent(dbcBox, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
 								GroupLayout.PREFERRED_SIZE))
-				.addPreferredGap(ComponentPlacement.RELATED, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-				.addGroup(groupLayout.createParallelGroup(Alignment.TRAILING)
-						.addGroup(groupLayout.createSequentialGroup().addComponent(lblNewLabel)
-								.addPreferredGap(ComponentPlacement.RELATED)
-								.addComponent(textField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
-										GroupLayout.PREFERRED_SIZE))
-						.addGroup(groupLayout.createSequentialGroup().addComponent(chckbxWrite)
-								.addPreferredGap(ComponentPlacement.RELATED).addComponent(chckbxRead)))
-				.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
-						.addGroup(groupLayout.createSequentialGroup().addGap(11).addComponent(lblNewLabel_1))
-						.addGroup(groupLayout.createSequentialGroup().addPreferredGap(ComponentPlacement.RELATED)
-								.addComponent(chckbxAdmin)))
-				.addPreferredGap(ComponentPlacement.RELATED)
-				.addGroup(groupLayout.createParallelGroup(Alignment.BASELINE).addComponent(passwordField,
-						GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+				.addGap(34).addComponent(lblNewLabel).addPreferredGap(ComponentPlacement.RELATED)
+				.addComponent(textField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
+						GroupLayout.PREFERRED_SIZE)
+				.addGap(11).addComponent(lblNewLabel_1).addPreferredGap(ComponentPlacement.RELATED)
+				.addGroup(groupLayout.createParallelGroup(Alignment.BASELINE)
+						.addComponent(passwordField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
+								GroupLayout.PREFERRED_SIZE)
 						.addComponent(btnNewButton))
-				.addGap(235)));
+				.addGap(18).addComponent(tabbedPane).addContainerGap()));
+
+		JPanel panel = new JPanel();
+		tabbedPane.addTab("Roles de Servidor", null, panel, null);
+
+		serverRolesTable = new JTable();
+		Object[] columnNames = new Object[] { "Activo", "Rol" };
+
+		DefaultTableModel model = new DefaultTableModel(columnNames, 0) {
+			@Override
+			public Class<?> getColumnClass(int columnIndex) {
+				if (columnIndex == 0) {
+					return Boolean.class; // Columna 1: CheckBox
+				} else {
+					return String.class; // Columna 2: String
+				}
+			}
+
+			@Override
+			public boolean isCellEditable(int row, int column) {
+				return column == 0;
+			}
+
+		};
+
+		serverRolesTable.setModel(model);
+		TableColumn column0 = serverRolesTable.getColumnModel().getColumn(0);
+		column0.setCellRenderer(serverRolesTable.getDefaultRenderer(Boolean.class));
+		column0.setCellEditor(serverRolesTable.getDefaultEditor(Boolean.class));
+
+		GroupLayout gl_panel = new GroupLayout(panel);
+		gl_panel.setHorizontalGroup(gl_panel.createParallelGroup(Alignment.LEADING).addComponent(serverRolesTable,
+				Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 463, Short.MAX_VALUE));
+		gl_panel.setVerticalGroup(gl_panel.createParallelGroup(Alignment.LEADING).addComponent(serverRolesTable,
+				GroupLayout.DEFAULT_SIZE, 178, Short.MAX_VALUE));
+		panel.setLayout(gl_panel);
+
+		panel_1 = new JPanel();
+		tabbedPane.addTab("Roles de Tabla", null, panel_1, null);
+
+		dbRolesTable = new JTable();
+
+		model = new DefaultTableModel(columnNames, 0) {
+			@Override
+			public Class<?> getColumnClass(int columnIndex) {
+				if (columnIndex == 0) {
+					return Boolean.class; // Columna 1: CheckBox
+				} else {
+					return String.class; // Columna 2: String
+				}
+			}
+
+			@Override
+			public boolean isCellEditable(int row, int column) {
+				return column == 0;
+			}
+
+		};
+
+		dbRolesTable.setModel(model);
+		column0 = dbRolesTable.getColumnModel().getColumn(0);
+		column0.setCellRenderer(dbRolesTable.getDefaultRenderer(Boolean.class));
+		column0.setCellEditor(dbRolesTable.getDefaultEditor(Boolean.class));
+
+		GroupLayout gl_panel_1 = new GroupLayout(panel_1);
+		gl_panel_1.setHorizontalGroup(gl_panel_1.createParallelGroup(Alignment.LEADING).addComponent(dbRolesTable,
+				GroupLayout.DEFAULT_SIZE, 463, Short.MAX_VALUE));
+		gl_panel_1.setVerticalGroup(gl_panel_1.createParallelGroup(Alignment.LEADING).addComponent(dbRolesTable,
+				Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 178, Short.MAX_VALUE));
+		panel_1.setLayout(gl_panel_1);
+
 		setLayout(groupLayout);
+
+		this.fillTableRole();
 
 		((AbstractDocument) textField.getDocument()).setDocumentFilter(new DocumentFilter() {
 			@Override
@@ -220,22 +285,30 @@ public class UserEditor extends JPanel {
 			result = operation.executeRaw(command);
 			this.parent.getResultReader().loadResult(result);
 
-			if (this.chckbxWrite.isSelected()) {
-				result = operation.executeRaw(
-						String.format("EXEC sp_addrolemember 'db_datawriter', '%s';", this.textField.getText()));
-				this.parent.getResultReader().loadResult(result);
+			DefaultTableModel model = (DefaultTableModel) serverRolesTable.getModel();
+			int rowCount = model.getRowCount();
+
+			for (int i = 0; i < rowCount; i++) {
+				boolean assigned = (Boolean) model.getValueAt(i, 0);
+				String roleName = (String) model.getValueAt(i, 1);
+				if (assigned) {
+					command = new AlterServerRole(roleName, this.textField.getText()).generateQuery();
+					result = operation.executeRaw(command);
+					this.parent.getResultReader().loadResult(result);
+				}
 			}
 
-			if (this.chckbxRead.isSelected()) {
-				result = operation.executeRaw(
-						String.format("EXEC sp_addrolemember 'db_datareader', '%s';", this.textField.getText()));
-				this.parent.getResultReader().loadResult(result);
-			}
+			model = (DefaultTableModel) dbRolesTable.getModel();
+			rowCount = model.getRowCount();
 
-			if (this.chckbxAdmin.isSelected()) {
-				result = operation.executeRaw(
-						String.format("EXEC sp_addrolemember 'db_ddladmin', '%s';", this.textField.getText()));
-				this.parent.getResultReader().loadResult(result);
+			for (int i = 0; i < rowCount; i++) {
+				boolean assigned = (Boolean) model.getValueAt(i, 0);
+				String roleName = (String) model.getValueAt(i, 1);
+				if (assigned) {
+					result = operation.executeRaw(
+							String.format("EXEC sp_addrolemember '%s', '%s';", roleName, this.textField.getText()));
+					this.parent.getResultReader().loadResult(result);
+				}
 			}
 
 			this.parent.getTreeView().loadDatabaseObjects();
@@ -271,6 +344,43 @@ public class UserEditor extends JPanel {
 			this.parent.getResultReader().loadResult(ResultFactory.fromException(e));
 		} finally {
 			this.parent.getFrame().setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+		}
+
+	}
+
+	private void fillTableRole() {
+		try (var operation = new SQLOperation(this.conStrGenerator.build())) {
+			parent.getFrame().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+			DefaultTableModel model = (DefaultTableModel) this.serverRolesTable.getModel();
+			var result = operation.executeRaw(DefaultQuerys.getRolesQuery);
+			if (result.getStatus().equals(Status.FAILURE)) {
+				this.parent.getResultReader().loadResult(result);
+				return;
+			}
+
+			var names = result.getTable().get("name");
+
+			for (int i = 0; i < names.size(); i++) {
+				model.addRow(new Object[] { false, names.get(i) });
+			}
+
+			model = (DefaultTableModel) this.dbRolesTable.getModel();
+			result = operation.executeRaw(DefaultQuerys.getDBRolesQuery);
+			if (result.getStatus().equals(Status.FAILURE)) {
+				this.parent.getResultReader().loadResult(result);
+				return;
+			}
+
+			names = result.getTable().get("name");
+
+			for (int i = 0; i < names.size(); i++) {
+				model.addRow(new Object[] { false, names.get(i) });
+			}
+
+		} catch (Exception e) {
+			parent.getResultReader().loadResult(ResultFactory.fromException(e));
+		} finally {
+			parent.getFrame().setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 		}
 
 	}
