@@ -41,10 +41,9 @@ import java.awt.event.ItemEvent;
 import javax.swing.JTabbedPane;
 
 public class UserEditor extends JPanel {
-	private JTextField textField;
+	private JTextField loginName;
 	private JPasswordField passwordField;
 	private Main parent;
-	private JLabel loginName;
 	private ConnectionStringBuilder conStrGenerator;
 	private String user;
 	private String password;
@@ -66,18 +65,17 @@ public class UserEditor extends JPanel {
 		this.password = password == null ? "" : password;
 		this.conStrGenerator = conStrGenerator;
 		this.parent = parent;
-		this.textField = new JTextField();
-		this.loginName = new JLabel(conStrGenerator.getUserName());
+		this.loginName = new JTextField();
 		this.modifyUser = modifyUser;
 
 		JLabel lblNewLabel = new JLabel("Nombre de Usuario");
 		JLabel lblNewLabel_1 = new JLabel("Contraseña");
 
-		this.textField.addKeyListener(new KeyAdapter() {
+		this.loginName.addKeyListener(new KeyAdapter() {
 			@Override
 			public void keyTyped(KeyEvent e) {
 				if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
-					UserEditor.this.textField.setText(UserEditor.this.user);
+					UserEditor.this.loginName.setText(UserEditor.this.user);
 					UserEditor.this.editUsername = false;
 					return;
 				}
@@ -85,7 +83,7 @@ public class UserEditor extends JPanel {
 			}
 		});
 
-		this.textField.setColumns(10);
+		this.loginName.setColumns(10);
 
 		this.passwordField = new JPasswordField();
 
@@ -113,8 +111,6 @@ public class UserEditor extends JPanel {
 			}
 		});
 
-		JLabel lblNewLabel_3 = new JLabel("Login:");
-
 		this.dbcBox = this.createComboBox();
 		dbcBox.addItemListener(new ItemListener() {
 			public void itemStateChanged(ItemEvent e) {
@@ -138,32 +134,25 @@ public class UserEditor extends JPanel {
 												.addComponent(lblNewLabel_1)
 												.addComponent(passwordField, GroupLayout.DEFAULT_SIZE, 209,
 														Short.MAX_VALUE)
-												.addComponent(textField))
+												.addComponent(loginName))
 										.addComponent(lblNewLabel))
-								.addPreferredGap(ComponentPlacement.RELATED, 158, Short.MAX_VALUE)
-								.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
-										.addGroup(groupLayout.createSequentialGroup().addComponent(lblNewLabel_3)
-												.addPreferredGap(ComponentPlacement.RELATED).addComponent(loginName)
-												.addGap(1))
-										.addComponent(btnNewButton, Alignment.TRAILING, GroupLayout.PREFERRED_SIZE, 97,
-												GroupLayout.PREFERRED_SIZE))))
+								.addPreferredGap(ComponentPlacement.RELATED, 162, Short.MAX_VALUE).addComponent(
+										btnNewButton, GroupLayout.PREFERRED_SIZE, 97, GroupLayout.PREFERRED_SIZE)))
 				.addContainerGap()));
 		groupLayout.setVerticalGroup(groupLayout.createParallelGroup(Alignment.LEADING).addGroup(groupLayout
 				.createSequentialGroup().addContainerGap()
-				.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
-						.addGroup(groupLayout.createParallelGroup(Alignment.BASELINE).addComponent(lblNewLabel_3)
-								.addComponent(loginName))
-						.addComponent(dbcBox, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
-								GroupLayout.PREFERRED_SIZE))
+				.addComponent(dbcBox, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 				.addGap(34).addComponent(lblNewLabel).addPreferredGap(ComponentPlacement.RELATED)
-				.addComponent(textField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
+				.addComponent(loginName, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
 						GroupLayout.PREFERRED_SIZE)
 				.addGap(11).addComponent(lblNewLabel_1).addPreferredGap(ComponentPlacement.RELATED)
 				.addGroup(groupLayout.createParallelGroup(Alignment.BASELINE)
 						.addComponent(passwordField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
 								GroupLayout.PREFERRED_SIZE)
 						.addComponent(btnNewButton))
-				.addGap(18).addComponent(tabbedPane).addContainerGap()));
+				.addGap(18).addComponent(tabbedPane, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
+						GroupLayout.PREFERRED_SIZE)
+				.addContainerGap()));
 
 		JPanel panel = new JPanel();
 		tabbedPane.addTab("Roles de Servidor", null, panel, null);
@@ -238,7 +227,7 @@ public class UserEditor extends JPanel {
 
 		this.fillTableRole();
 
-		((AbstractDocument) textField.getDocument()).setDocumentFilter(new DocumentFilter() {
+		((AbstractDocument) loginName.getDocument()).setDocumentFilter(new DocumentFilter() {
 			@Override
 			public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs)
 					throws BadLocationException {
@@ -248,6 +237,15 @@ public class UserEditor extends JPanel {
 				}
 			}
 		});
+
+		if (username != null && !username.equals("")) {
+			System.out.println(username);
+			this.loginName.setText("username");
+		}
+
+		if (password != null && !password.equals("")) {
+			this.passwordField.setText(password);
+		}
 
 	}
 
@@ -277,12 +275,12 @@ public class UserEditor extends JPanel {
 	private void executeCreateUser() {
 		try (var operation = new SQLOperation(this.conStrGenerator.build())) {
 			this.parent.getFrame().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-			String command = new Login(this.textField.getText(), new String(this.passwordField.getPassword()).strip())
+			String command = new Login(this.loginName.getText(), new String(this.passwordField.getPassword()).strip())
 					.generateQuery();
 			var result = operation.executeRaw(command);
 			this.parent.getResultReader().loadResult(result);
 
-			command = new User(this.textField.getText(), this.textField.getText()).generateQuery();
+			command = new User(this.loginName.getText(), this.loginName.getText()).generateQuery();
 			result = operation.executeRaw(command);
 			this.parent.getResultReader().loadResult(result);
 
@@ -293,7 +291,7 @@ public class UserEditor extends JPanel {
 				boolean assigned = (Boolean) model.getValueAt(i, 0);
 				String roleName = (String) model.getValueAt(i, 1);
 				if (assigned) {
-					command = new AlterServerRole(roleName, this.textField.getText()).generateQuery();
+					command = new AlterServerRole(roleName, this.loginName.getText()).generateQuery();
 					result = operation.executeRaw(command);
 					this.parent.getResultReader().loadResult(result);
 				}
@@ -307,7 +305,7 @@ public class UserEditor extends JPanel {
 				String roleName = (String) model.getValueAt(i, 1);
 				if (assigned) {
 					result = operation.executeRaw(
-							String.format("EXEC sp_addrolemember '%s', '%s';", roleName, this.textField.getText()));
+							String.format("EXEC sp_addrolemember '%s', '%s';", roleName, this.loginName.getText()));
 					this.parent.getResultReader().loadResult(result);
 				}
 			}
@@ -325,7 +323,7 @@ public class UserEditor extends JPanel {
 			this.parent.getFrame().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 			if (this.editUsername) {
 				AlterUser generator = new AlterUser(this.loginName.getText(), AlterUser.Fields.NAME,
-						this.textField.getText());
+						this.loginName.getText());
 				String command = generator.generateQuery();
 				var result = operation.executeRaw(command);
 				this.parent.getResultReader().loadResult(result);
@@ -333,7 +331,7 @@ public class UserEditor extends JPanel {
 
 			if (this.editPassword) {
 				AlterUser generator = new AlterUser(this.loginName.getText(), AlterUser.Fields.PASSWORD,
-						this.textField.getText());
+						this.loginName.getText());
 				String command = generator.generateQuery();
 				var result = operation.executeRaw(command);
 				this.parent.getResultReader().loadResult(result);

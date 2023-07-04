@@ -134,7 +134,7 @@ public class Tabs extends JPanel {
 	}
 	
 	public void createModifyUserTab(ConnectionStringBuilder c, String userName) {
-		UserEditor userEditor = new UserEditor(this.parent,true,userName,null,c);
+		UserEditor userEditor = new UserEditor(this.parent,true,userName,"password",c);
 		String title = "Editor de Usuarios" + (this.userTabsCount == 0 ? "" : String.format("(%d)", this.userTabsCount));
 		tabbedPane.addTab(title, new JScrollPane(userEditor));
 		this.tableTabsCount++;

@@ -27,6 +27,7 @@ public class Main {
 	private Tabs tabs;
 	private TreeView treeView;
 	private JLabel lblNewLabel;
+	private Settings settings;
 
 	/**
 	 * Launch the application.
@@ -59,6 +60,8 @@ public class Main {
 		frame.setBounds(100, 100, 904, 637);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
+		this.settings = Settings.loadFromFile();
+		
 		JSplitPane mainPane = new JSplitPane();
 
 		panel = new JPanel();
@@ -149,5 +152,9 @@ public class Main {
 
 	public ConnectionStringBuilder getConnectionStringBuilder() {
 		return this.conStrGenerator;
+	}
+	
+	public Settings getSettings() {
+		return this.settings;
 	}
 }

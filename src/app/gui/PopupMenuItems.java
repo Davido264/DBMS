@@ -1,5 +1,6 @@
 package app.gui;
 
+import app.lib.connector.ConnectionStringBuilder;
 import app.lib.connector.SQLOperation;
 import app.lib.queryBuilders.DefaultQuerys;
 import app.lib.queryBuilders.Select;
@@ -46,15 +47,20 @@ public class PopupMenuItems {
 		
 	}
 	
-	private static JMenuItem createUsersItem(Main parent, String databaseName) {
+	private static JMenuItem createUsersItem(Main parent) {
 		JMenuItem menuItem = new JMenuItem("Nuevo usuario");
 		menuItem.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent event) {
-            	if (databaseName == null) {
-            		parent.getTabs().createNewUserTab(parent.getConnectionStringBuilder().copy().withIntegratedSecurity(true),"");
+            	ConnectionStringBuilder newConnectionStringBuilder = parent.getConnectionStringBuilder().copy().withDbName("master");
+            	Settings s = parent.getSettings();
+            	
+            	if (s.adminIntegrado) {
+            		newConnectionStringBuilder = newConnectionStringBuilder.withIntegratedSecurity(true);
             	} else {
-            		parent.getTabs().createNewUserTab(parent.getConnectionStringBuilder().copy().withDbName(databaseName).withIntegratedSecurity(true),"");
+            		newConnectionStringBuilder = newConnectionStringBuilder.withUserName(s.usuarioAdmin).withPassword(s.claveAdmin);
             	}
+            	
+            	parent.getTabs().createNewUserTab(newConnectionStringBuilder,"");
             }
 		});
 		return menuItem;
@@ -193,7 +199,16 @@ public class PopupMenuItems {
 		JMenuItem menuItem1 = new JMenuItem("Eliminar Usuario");
 		menuItem1.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent event) {
-				try (var sqlOperation = new SQLOperation(parent.getConnectionStringBuilder().withDbName("master").build())) {
+            	ConnectionStringBuilder newConnectionStringBuilder = parent.getConnectionStringBuilder().copy().withDbName("master");
+            	Settings s = parent.getSettings();
+            	
+            	if (s.adminIntegrado) {
+            		newConnectionStringBuilder = newConnectionStringBuilder.withIntegratedSecurity(true);
+            	} else {
+            		newConnectionStringBuilder = newConnectionStringBuilder.withUserName(s.usuarioAdmin).withPassword(s.claveAdmin);
+            	}
+            	
+				try (var sqlOperation = new SQLOperation(newConnectionStringBuilder.build())) {
 					parent.getFrame().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 					var query = Drop.user(user).generateQuery();
 					var result = sqlOperation.executeRaw(query);
@@ -213,18 +228,27 @@ public class PopupMenuItems {
 		JMenuItem menuItem2 = new JMenuItem("Modificar Usuario");
 		menuItem2.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent event) {
-            	parent.getTabs().createModifyUserTab(parent.getConnectionStringBuilder().copy().withDbName("NORTHWIND").withIntegratedSecurity(true),user);
+            	ConnectionStringBuilder newConnectionStringBuilder = parent.getConnectionStringBuilder().copy().withDbName("master");
+            	Settings s = parent.getSettings();
+            	
+            	if (s.adminIntegrado) {
+            		newConnectionStringBuilder = newConnectionStringBuilder.withIntegratedSecurity(true);
+            	} else {
+            		newConnectionStringBuilder = newConnectionStringBuilder.withUserName(s.usuarioAdmin).withPassword(s.claveAdmin);
+            	}
+            	
+            	parent.getTabs().createModifyUserTab(newConnectionStringBuilder,user);
             } 
 		});
 		
-		popupMenu.add(createUsersItem(parent,null));
+		popupMenu.add(createUsersItem(parent));
 		popupMenu.add(menuItem2);
 		popupMenu.add(menuItem1);
 	}
 	
 	public static void fillUsersSectionPopupMenu(JPopupMenu popupMenu, Main parent) {
 		popupMenu.add(createQueryItem(parent,"master"));
-		popupMenu.add(createUsersItem(parent,null));
+		popupMenu.add(createUsersItem(parent));
 	}
 	
 	public static void fillDatabaseSectionPopupMenu(JPopupMenu popupMenu, Main parent) {
