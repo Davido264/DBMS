@@ -51,7 +51,7 @@ public class UserEditor extends JPanel {
 	private JComboBox dbcBox;
 	private boolean editUsername;
 	private boolean editPassword;
-	private boolean newUser;
+	private boolean modifyUser;
 	private JTable serverRolesTable;
 	private JPanel panel_1;
 	private JTable dbRolesTable;
@@ -60,7 +60,7 @@ public class UserEditor extends JPanel {
 	 * Create the panel.
 	 */
 	@SuppressWarnings("serial")
-	public UserEditor(Main parent, boolean newUser, String username, String password,
+	public UserEditor(Main parent, boolean modifyUser, String username, String password,
 			ConnectionStringBuilder conStrGenerator) {
 		this.user = username == null ? "" : username;
 		this.password = password == null ? "" : password;
@@ -68,6 +68,7 @@ public class UserEditor extends JPanel {
 		this.parent = parent;
 		this.textField = new JTextField();
 		this.loginName = new JLabel(conStrGenerator.getUserName());
+		this.modifyUser = modifyUser;
 
 		JLabel lblNewLabel = new JLabel("Nombre de Usuario");
 		JLabel lblNewLabel_1 = new JLabel("Contraseña");
@@ -103,7 +104,7 @@ public class UserEditor extends JPanel {
 		JButton btnNewButton = new JButton("Guardar");
 		btnNewButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				if (!newUser && (UserEditor.this.editPassword || UserEditor.this.editUsername)) {
+				if (modifyUser) {
 					executeAlterUser();
 					return;
 				}
@@ -121,7 +122,7 @@ public class UserEditor extends JPanel {
 				UserEditor.this.conStrGenerator.withDbName(newDB);
 			}
 		});
-		this.dbcBox.setEnabled(newUser);
+		this.dbcBox.setEnabled(!this.modifyUser);
 
 		JTabbedPane tabbedPane = new JTabbedPane(JTabbedPane.TOP);
 
@@ -339,6 +340,23 @@ public class UserEditor extends JPanel {
 
 			}
 
+			DefaultTableModel model = (DefaultTableModel) dbRolesTable.getModel();
+			int rowCount = model.getRowCount();
+
+			for (int i = 0; i < rowCount; i++) {
+				boolean assigned = (Boolean) model.getValueAt(i, 0);
+				String roleName = (String) model.getValueAt(i, 1);
+				if (!assigned) {
+					var result = operation
+							.executeRaw(String.format("EXEC sp_droprolemember '%s', '%s';", roleName, this.user));
+					this.parent.getResultReader().loadResult(result);
+				} else {
+					var result = operation
+							.executeRaw(String.format("EXEC sp_addrolemember '%s', '%s';", roleName, this.user));
+					this.parent.getResultReader().loadResult(result);
+				}
+			}
+
 			this.parent.getTreeView().loadDatabaseObjects();
 		} catch (Exception e) {
 			this.parent.getResultReader().loadResult(ResultFactory.fromException(e));
@@ -377,6 +395,22 @@ public class UserEditor extends JPanel {
 				model.addRow(new Object[] { false, names.get(i) });
 			}
 
+			if (this.modifyUser) {
+				result = operation.executeRaw(String.format(DefaultQuerys.getUserDBRolesQuery, user));
+				if (result.getStatus().equals(Status.FAILURE)) {
+					this.parent.getResultReader().loadResult(result);
+					return;
+				}
+
+				names = result.getTable().get("name");
+				for (int i = 0; i < names.size(); i++) {
+					for (int j = 0; j < model.getRowCount(); j++) {
+						if (((String) (model.getValueAt(j, 1))).equals((String) names.get(i))) {
+							model.setValueAt(true, j, 0);
+						}
+					}
+				}
+			}
 		} catch (Exception e) {
 			parent.getResultReader().loadResult(ResultFactory.fromException(e));
 		} finally {

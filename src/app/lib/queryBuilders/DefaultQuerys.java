@@ -5,6 +5,7 @@ public class DefaultQuerys {
 	public static final String dropDatabaseQuery = "DROP DATABASE %s;";
 	public static final String getDatabasesQuery = "SELECT name FROM sys.databases WHERE database_id > 4 AND HAS_DBACCESS(name) = 1;";
 	public static final String getColumnsQuery = "SELECT CONCAT(column_name,'(',data_type,')') as name FROM information_schema.columns WHERE table_schema = '%s' AND table_name = '%s';";
+	public static final String getColumnNamesQuery = "SELECT column_name as name FROM information_schema.columns WHERE table_schema = '%s' AND table_name = '%s';";
 	public static final String getTriggersQuery = "SELECT name FROM sys.triggers WHERE parent_id = OBJECT_ID('%s');";
 	public static final String getIndexesQuery = "SELECT name FROM sys.indexes WHERE object_id = OBJECT_ID('%s');";
 	public static final String getConstraitsQuery = "SELECT CONCAT(constraint_name, '(', constraint_type, ')') as name FROM information_schema.table_constraints WHERE table_schema = '%s' AND table_name = '%s';";
@@ -27,5 +28,16 @@ WHERE v.is_ms_shipped = 0;
 	
 	public static final String getRolesQuery = "SELECT name AS name FROM sys.server_principals WHERE type = 'R' AND is_disabled <> 1;";
 	public static final String getDBRolesQuery = "SELECT name AS name FROM sys.database_principals WHERE type = 'R';";
+	public static final String getUserDBRolesQuery = """
+SELECT DP1.name AS name 
+FROM sys.database_role_members AS DRM  
+RIGHT OUTER JOIN sys.database_principals AS DP1  
+    ON DRM.role_principal_id = DP1.principal_id  
+LEFT OUTER JOIN sys.database_principals AS DP2  
+    ON DRM.member_principal_id = DP2.principal_id  
+WHERE DP1.type = 'R'
+AND DP2.name = '%s'
+ORDER BY DP1.name; 			
+""";
 	
 }

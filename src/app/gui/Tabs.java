@@ -127,7 +127,14 @@ public class Tabs extends JPanel {
 	}
 	
 	public void createNewUserTab(ConnectionStringBuilder c, String userName) {
-		UserEditor userEditor = new UserEditor(this.parent,true,null,null,c);
+		UserEditor userEditor = new UserEditor(this.parent,false,null,null,c);
+		String title = "Editor de Usuarios" + (this.userTabsCount == 0 ? "" : String.format("(%d)", this.userTabsCount));
+		tabbedPane.addTab(title, new JScrollPane(userEditor));
+		this.tableTabsCount++;
+	}
+	
+	public void createModifyUserTab(ConnectionStringBuilder c, String userName) {
+		UserEditor userEditor = new UserEditor(this.parent,true,userName,null,c);
 		String title = "Editor de Usuarios" + (this.userTabsCount == 0 ? "" : String.format("(%d)", this.userTabsCount));
 		tabbedPane.addTab(title, new JScrollPane(userEditor));
 		this.tableTabsCount++;

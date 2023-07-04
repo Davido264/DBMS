@@ -164,6 +164,22 @@ public class PopupMenuItems {
             } 
 		});
 		
+		JMenuItem menuItem3 = new JMenuItem("Particionar Tabla");
+		menuItem2.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent event) {
+				try (var sqlOperation = new SQLOperation(parent.getConnectionStringBuilder().build())) {
+					parent.getFrame().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+					var query = Drop.table(table).generateQuery();
+					var result = sqlOperation.executeRaw(query);
+					parent.getResultReader().loadResult(result);
+					parent.getTreeView().loadDatabaseObjects();
+				} catch(Exception ex) {
+					parent.getResultReader().loadResult(ResultFactory.fromException(ex));
+				} finally {
+					parent.getFrame().setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+				}
+            } 
+		});
 		
 		
 		popupMenu.add(menuItem1);
@@ -193,8 +209,16 @@ public class PopupMenuItems {
 				}
             } 
 		});
+	
+		JMenuItem menuItem2 = new JMenuItem("Modificar Usuario");
+		menuItem2.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent event) {
+            	parent.getTabs().createModifyUserTab(parent.getConnectionStringBuilder().copy().withDbName("NORTHWIND").withIntegratedSecurity(true),user);
+            } 
+		});
 		
 		popupMenu.add(createUsersItem(parent,null));
+		popupMenu.add(menuItem2);
 		popupMenu.add(menuItem1);
 	}
 	
