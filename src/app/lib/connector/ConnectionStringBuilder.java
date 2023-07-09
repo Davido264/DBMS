@@ -35,20 +35,17 @@ public class ConnectionStringBuilder {
       sb.append("databaseName=" + this.dbName + ";");
     }
 
+    if (this.userName != null) {
+      sb.append("user=" + this.userName + ";");
+    }
+    
     if (this.integratedSecurity) {
       sb.append("integratedSecurity=true;");
     } else {
-
-      if (this.userName != null) {
-        sb.append("user=" + this.userName + ";");
-      }
-
       if (this.passoword != null) {
         sb.append("password=" + this.passoword + ";");
       }
-      
     }
-    
     
     if (this.trustServerCertificates) {
       sb.append("trustServerCertificate=true;");

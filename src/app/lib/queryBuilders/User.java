@@ -1,7 +1,7 @@
 package app.lib.queryBuilders;
 
 public class User implements QueryBuilder {
-	private final static String template = "CREATE USER %s FOR LOGIN %s;";
+	private final static String template = "CREATE USER %s FOR LOGIN [%s];";
 	private String username;
 	private String login;
 	

@@ -33,6 +33,8 @@ import app.lib.result.Status;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import javax.swing.JTabbedPane;
+import javax.swing.JCheckBox;
+import javax.swing.SwingConstants;
 
 public class UserEditor extends JPanel {
 	private JTextField loginName;
@@ -47,6 +49,7 @@ public class UserEditor extends JPanel {
 	private JTable serverRolesTable;
 	private JScrollPane panel_1;
 	private JTable dbRolesTable;
+	JCheckBox windowsAuth;
 	private Object[] databases;
 
 	/**
@@ -55,20 +58,35 @@ public class UserEditor extends JPanel {
 	@SuppressWarnings("serial")
 	public UserEditor(Main parent, boolean modifyUser, String username, String password,
 			ConnectionStringBuilder conStrGenerator) {
-		this.user = username == null ? "" : username;
+		String[] arr = username == null ? new String[] { "" } : username.split("\\\\");
+		this.user = arr[arr.length - 1];
 		this.password = password == null ? "" : password;
 		this.conStrGenerator = conStrGenerator;
 		this.parent = parent;
-		this.loginName = new JTextField();
 		this.modifyUser = modifyUser;
 
+		this.loginName = new JTextField();
+		this.passwordField = new JPasswordField();
 		JLabel lblNewLabel = new JLabel("Nombre de Usuario");
 		JLabel lblNewLabel_1 = new JLabel("Contraseña");
+	
+		if (this.user != null && !this.user.equals("")) {
+			this.loginName.setText(this.user);
+		}
+
+		if (this.password != null && !this.password.equals("")) {
+			this.passwordField.setText(this.password);
+		}
+		
+		
+		this.loginName.setEditable(!modifyUser);
+		this.passwordField.setEditable(!modifyUser);
 
 		this.loginName.addKeyListener(new KeyAdapter() {
 			@Override
 			public void keyTyped(KeyEvent e) {
 				if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+					System.out.println("Hello");
 					UserEditor.this.loginName.setText(UserEditor.this.user);
 					UserEditor.this.editUsername = false;
 					return;
@@ -78,9 +96,6 @@ public class UserEditor extends JPanel {
 		});
 
 		this.loginName.setColumns(10);
-
-		this.passwordField = new JPasswordField();
-
 		this.passwordField.addKeyListener(new KeyAdapter() {
 			@Override
 			public void keyTyped(KeyEvent e) {
@@ -96,8 +111,12 @@ public class UserEditor extends JPanel {
 		JButton btnNewButton = new JButton("Guardar");
 		btnNewButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				UserEditor.this.user = loginName.getText();
-				UserEditor.this.password = new String(passwordField.getPassword()).strip();
+				if ((modifyUser && editUsername && !loginName.getText().equals("")) || !modifyUser) {
+					UserEditor.this.user = loginName.getText();
+				}
+				if ((modifyUser && editPassword && !new String(passwordField.getPassword()).strip().equals("")) || !modifyUser) {
+					UserEditor.this.password = new String(passwordField.getPassword()).strip();
+				}
 
 				if (modifyUser) {
 					executeAlterUser();
@@ -110,35 +129,48 @@ public class UserEditor extends JPanel {
 
 		JTabbedPane tabbedPane = new JTabbedPane(JTabbedPane.TOP);
 
+		this.windowsAuth = new JCheckBox("Usar Autenticación de Windows");
+		this.windowsAuth.setEnabled(!modifyUser);
+
+		windowsAuth.setVerticalAlignment(SwingConstants.TOP);
+
 		GroupLayout groupLayout = new GroupLayout(this);
-		groupLayout.setHorizontalGroup(groupLayout.createParallelGroup(Alignment.TRAILING).addGroup(Alignment.LEADING,
-				groupLayout.createSequentialGroup().addContainerGap().addGroup(groupLayout
-						.createParallelGroup(Alignment.TRAILING)
-						.addComponent(tabbedPane, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 468, Short.MAX_VALUE)
-						.addGroup(groupLayout.createSequentialGroup().addGroup(groupLayout
-								.createParallelGroup(Alignment.LEADING)
-								.addGroup(groupLayout.createParallelGroup(Alignment.LEADING, false)
-										.addComponent(lblNewLabel_1)
-										.addComponent(passwordField, GroupLayout.DEFAULT_SIZE, 209, Short.MAX_VALUE)
-										.addComponent(loginName, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
-												GroupLayout.PREFERRED_SIZE))
-								.addComponent(lblNewLabel))
-								.addPreferredGap(ComponentPlacement.RELATED, 162, Short.MAX_VALUE).addComponent(
-										btnNewButton, GroupLayout.PREFERRED_SIZE, 97, GroupLayout.PREFERRED_SIZE)))
-						.addContainerGap()));
-		groupLayout.setVerticalGroup(groupLayout.createParallelGroup(Alignment.LEADING)
-				.addGroup(groupLayout.createSequentialGroup().addGap(22).addComponent(lblNewLabel)
-						.addPreferredGap(ComponentPlacement.RELATED)
-						.addComponent(loginName, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
+		groupLayout.setHorizontalGroup(groupLayout.createParallelGroup(Alignment.LEADING)
+				.addGroup(groupLayout.createSequentialGroup().addContainerGap()
+						.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
+								.addGroup(
+										groupLayout.createSequentialGroup()
+												.addComponent(tabbedPane, GroupLayout.DEFAULT_SIZE, 459,
+														Short.MAX_VALUE)
+												.addContainerGap())
+								.addGroup(groupLayout.createSequentialGroup().addGroup(groupLayout
+										.createParallelGroup(Alignment.LEADING)
+										.addGroup(groupLayout.createSequentialGroup()
+												.addGroup(groupLayout.createParallelGroup(Alignment.LEADING, false)
+														.addComponent(lblNewLabel_1)
+														.addComponent(passwordField, GroupLayout.DEFAULT_SIZE, 144,
+																Short.MAX_VALUE)
+														.addComponent(loginName))
+												.addGap(6).addComponent(windowsAuth)
+												.addPreferredGap(ComponentPlacement.RELATED, 45, Short.MAX_VALUE)
+												.addComponent(btnNewButton, GroupLayout.PREFERRED_SIZE, 101,
+														GroupLayout.PREFERRED_SIZE)
+												.addGap(18))
+										.addGroup(groupLayout.createSequentialGroup().addComponent(lblNewLabel)
+												.addPreferredGap(ComponentPlacement.RELATED, 360, Short.MAX_VALUE)))
+										.addGap(0)))));
+		groupLayout.setVerticalGroup(groupLayout.createParallelGroup(Alignment.LEADING).addGroup(groupLayout
+				.createSequentialGroup().addGap(22).addComponent(lblNewLabel)
+				.addPreferredGap(ComponentPlacement.RELATED)
+				.addComponent(loginName, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
+						GroupLayout.PREFERRED_SIZE)
+				.addGap(11).addComponent(lblNewLabel_1).addPreferredGap(ComponentPlacement.RELATED)
+				.addGroup(groupLayout.createParallelGroup(Alignment.BASELINE)
+						.addComponent(passwordField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
 								GroupLayout.PREFERRED_SIZE)
-						.addGap(11).addComponent(lblNewLabel_1).addPreferredGap(ComponentPlacement.RELATED)
-						.addGroup(groupLayout.createParallelGroup(Alignment.BASELINE)
-								.addComponent(passwordField, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
-										GroupLayout.PREFERRED_SIZE)
-								.addComponent(btnNewButton))
-						.addGap(18).addComponent(tabbedPane, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
-								GroupLayout.PREFERRED_SIZE)
-						.addContainerGap(62, Short.MAX_VALUE)));
+						.addComponent(windowsAuth).addComponent(btnNewButton))
+				.addGap(18).addComponent(tabbedPane, GroupLayout.PREFERRED_SIZE, 264, GroupLayout.PREFERRED_SIZE)
+				.addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)));
 
 		JScrollPane panel = new JScrollPane();
 		tabbedPane.addTab("Roles de Servidor", null, panel, null);
@@ -187,14 +219,6 @@ public class UserEditor extends JPanel {
 				}
 			}
 		});
-
-		if (this.user != null && !this.user.equals("")) {
-			this.loginName.setText("username");
-		}
-
-		if (this.password != null && !this.password.equals("")) {
-			this.passwordField.setText(this.password);
-		}
 
 	}
 
@@ -273,15 +297,23 @@ public class UserEditor extends JPanel {
 	private void executeCreateUser() {
 		try (var operation = new SQLOperation(this.conStrGenerator.build())) {
 			this.parent.getFrame().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-			String command = new Login(this.loginName.getText(), new String(this.passwordField.getPassword()).strip())
-					.generateQuery();
+			String loginUser;
+
+			if (this.windowsAuth.isSelected()) {
+				loginUser = String.format("%s\\%s", System.getenv("USERDOMAIN"), this.loginName.getText());
+			} else {
+				loginUser = this.loginName.getText();
+			}
+
+			String command = new Login(loginUser, new String(this.passwordField.getPassword()).strip(),
+					this.windowsAuth.isSelected()).generateQuery();
 			var result = operation.executeRaw(command);
 			this.parent.getResultReader().loadResult(result);
 
 			for (Object database : this.databases) {
 				ConnectionStringBuilder constr = this.conStrGenerator.copy().withDbName((String) database);
 				try (SQLOperation inner = new SQLOperation(constr.build())) {
-					command = new User(this.loginName.getText(), this.loginName.getText()).generateQuery();
+					command = new User(this.loginName.getText(), loginUser).generateQuery();
 					result = inner.executeRaw(command);
 					this.parent.getResultReader().loadResult(result);
 				}

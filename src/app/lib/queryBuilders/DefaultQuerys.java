@@ -41,7 +41,7 @@ ORDER BY DP1.name;
 """;
 
 	public static final String dropUserIfExistsQuery = """
-IF EXISTS (SELECT 1 FROM sys.database_principals WHERE name = '%s' AND type = 'S')
+IF EXISTS (SELECT 1 FROM sys.database_principals WHERE name = '%s' AND type  in ('S', 'U'))
 BEGIN
     DROP USER [%s];
 END

@@ -56,7 +56,6 @@ public class Connector extends JDialog {
 
 		JLabel lblUserName = new JLabel("Nombre de Usuario");
 		JLabel lblPassword = new JLabel("Contraseña");
-		lblUserName.setEnabled(false);
 		lblPassword.setEnabled(false);
 
 		setBounds(100, 100, 316, 365);
@@ -75,7 +74,6 @@ public class Connector extends JDialog {
 			txtUserName = new JTextField();
 			txtUserName.setToolTipText("Nombre de Usuario de la base de datos");
 			txtUserName.setColumns(10);
-			txtUserName.setEnabled(false);
 			String username = String.format("%s\\%s", System.getenv("USERDOMAIN"),System.getenv("USERNAME"));
 			txtUserName.setText(username);
 		}
@@ -109,12 +107,8 @@ public class Connector extends JDialog {
 			chckboxIS.setSelected(true);
 			chckboxIS.addItemListener(new ItemListener() {
 				public void itemStateChanged(ItemEvent e) {
-					txtUserName.setEnabled(!txtUserName.isEnabled());
 					txtPassword.setEnabled(!txtPassword.isEnabled());
-					lblUserName.setEnabled(!lblUserName.isEnabled());
 					lblPassword.setEnabled(!lblPassword.isEnabled());
-					txtUserName.revalidate();
-					lblUserName.revalidate();
 					txtPassword.revalidate();
 					lblPassword.revalidate();
 				}

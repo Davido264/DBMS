@@ -197,6 +197,9 @@ public class PopupMenuItems {
 	
 	
 	public static void fillUsersPopupMenu(JPopupMenu popupMenu, Main parent, String user) {		
+		String[] arr = user.split("\\\\");
+		String splittedUser = arr[arr.length - 1];
+		
 		JMenuItem menuItem1 = new JMenuItem("Eliminar Usuario");
 		menuItem1.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent event) {
@@ -224,8 +227,10 @@ public class PopupMenuItems {
 					ConnectionStringBuilder copy = newConnectionStringBuilder.copy();
 					for (Object database : result.getTable().get("name")) {
 						try (SQLOperation op = new SQLOperation(copy.withDbName((String)database).build())) {
-							query = String.format(DefaultQuerys.dropUserIfExistsQuery, user,user);
+							query = String.format(DefaultQuerys.dropUserIfExistsQuery, splittedUser,splittedUser);
+							System.out.println(query);
 							result = op.executeRaw(query);
+							System.out.println(result.getStatus());
 							parent.getResultReader().loadResult(result);
 						}
 					}

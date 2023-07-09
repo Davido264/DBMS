@@ -1,7 +1,7 @@
 package app.lib.queryBuilders;
 
 public class Drop implements QueryBuilder {
-  private final String template = "DROP %s %s;";
+  private final String template = "DROP %s [%s];";
   private String tableName;
   private DropType type;
 
