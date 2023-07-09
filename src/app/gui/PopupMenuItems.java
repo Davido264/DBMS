@@ -136,12 +136,14 @@ public class PopupMenuItems {
 	}
 	
 	public static void fillTablesPopupMenu(JPopupMenu popupMenu, Main parent, String table, String database) {
+		String[] arr = table.split("\\.");
+		String splittedTable = arr[arr.length - 1];
 		JMenuItem menuItem1 = new JMenuItem("Seleccionar los primeros 100");
 		menuItem1.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent event) {
 				try (var sqlOperation = new SQLOperation(parent.getConnectionStringBuilder().copy().withDbName(database).build())) {
 					parent.getFrame().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-					var query = Select.all(table, 100).generateQuery();
+					var query = Select.all(splittedTable, 100).generateQuery();
 					var result = sqlOperation.executeRaw(query);
 					parent.getTabs().createNewEditorTab(query,parent.getConnectionStringBuilder().copy());
 					parent.getResultReader().loadResult(result);
@@ -159,7 +161,7 @@ public class PopupMenuItems {
             public void actionPerformed(ActionEvent event) {
 				try (var sqlOperation = new SQLOperation(parent.getConnectionStringBuilder().build())) {
 					parent.getFrame().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-					var query = Drop.table(table).generateQuery();
+					var query = Drop.table(splittedTable).generateQuery();
 					var result = sqlOperation.executeRaw(query);
 					parent.getResultReader().loadResult(result);
 					parent.getTreeView().loadDatabaseObjects();

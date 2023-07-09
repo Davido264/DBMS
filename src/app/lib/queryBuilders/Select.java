@@ -1,7 +1,7 @@
 package app.lib.queryBuilders;
 
 public class Select implements QueryBuilder{
-  private final String template = "SELECT%s %s FROM %s;";
+  private final String template = "SELECT%s %s FROM [%s];";
   private String tableName;
   private ColumnName[] columns;  
   private int max;
@@ -29,7 +29,11 @@ public class Select implements QueryBuilder{
   public String generateQuery(Object... args) {
     var strBuilder = new StringBuilder();
     for (int i = 0 ; i < columns.length; i++) {
-      strBuilder.append(String.format("%s.[%s]", this.tableName,columns[i].toString()));
+      if (columns[i].toString().endsWith("*")) {
+    	  strBuilder.append(String.format("[%s].%s", this.tableName,columns[i].toString()));
+      } else {
+    	  strBuilder.append(String.format("[%s].[%s]", this.tableName,columns[i].toString()));
+      }
 
       if (i != columns.length - 1) {
         strBuilder.append(", ");
