@@ -26,9 +26,8 @@ public class Settings {
 				try (FileWriter writer = new FileWriter(filePath)) {
 					String content = gson.toJson(Settings.empty);
 					writer.write(content);
-				} catch (IOException e) {
-					System.out.println(e.getMessage());
-				}
+				} 
+				return Settings.empty;
 			}
 		} catch (IOException e) {
 			System.out.println(e.getMessage());
