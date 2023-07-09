@@ -36,6 +36,12 @@ public class ResultReader extends JPanel {
 	
 	public void loadResult(Result result) {
 		if (result.getStatus().equals(Status.FAILURE)) {
+			//System.err.println(result.getReason());
+			//if (result.getStackTrace() != null) {
+			//	for (var e : result.getStackTrace()) {
+			//		System.err.println("\t" + e);
+			//	}
+			//}
 			textArea = new JTextArea();
 			textArea.setText(result.getReason());
 			textArea.setEditable(false);

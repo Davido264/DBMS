@@ -43,10 +43,11 @@ public class ResultFactory {
   }
 
   public static Result fromException(Exception e) {
+	String[] arr = e.getClass().toString().split("\\.");
     return new Result()
       .withStatus(Status.FAILURE)
       .withType(ResultType.STRING)
-      .withReason(e.getLocalizedMessage())
+      .withReason(String.format("%s : %s", arr[arr.length-1] ,e.getLocalizedMessage()))
       .withStackTrace(e.getStackTrace());
   }
 }

@@ -51,7 +51,7 @@ public class Editor extends JPanel {
 		this.parent = parent;
 		this.editorPane = new JEditorPane();
 		this.conStrGenerator = conStrGenerator;
-	
+
 		JScrollPane scrollPane = new JScrollPane(editorPane);
 		
 		JToolBar toolBar = new JToolBar();

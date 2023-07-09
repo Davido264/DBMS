@@ -16,7 +16,6 @@ import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DocumentFilter;
 import javax.swing.JTable;
-import javax.swing.JCheckBox;
 import java.awt.event.ActionListener;
 import java.awt.Cursor;
 import java.awt.event.ActionEvent;
@@ -33,11 +32,6 @@ import app.lib.result.Status;
 
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.util.ArrayList;
-
-import javax.swing.JComboBox;
-import java.awt.event.ItemListener;
-import java.awt.event.ItemEvent;
 import javax.swing.JTabbedPane;
 
 public class UserEditor extends JPanel {
@@ -53,6 +47,7 @@ public class UserEditor extends JPanel {
 	private JTable serverRolesTable;
 	private JScrollPane panel_1;
 	private JTable dbRolesTable;
+	private Object[] databases;
 
 	/**
 	 * Create the panel.
@@ -101,6 +96,9 @@ public class UserEditor extends JPanel {
 		JButton btnNewButton = new JButton("Guardar");
 		btnNewButton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
+				UserEditor.this.user = loginName.getText();
+				UserEditor.this.password = new String(passwordField.getPassword()).strip();
+
 				if (modifyUser) {
 					executeAlterUser();
 					return;
@@ -176,6 +174,7 @@ public class UserEditor extends JPanel {
 		panel.setViewportView(serverRolesTable);
 
 		this.loadTable(tabbedPane);
+		this.fillTableRole();
 		setLayout(groupLayout);
 
 		((AbstractDocument) loginName.getDocument()).setDocumentFilter(new DocumentFilter() {
@@ -189,13 +188,12 @@ public class UserEditor extends JPanel {
 			}
 		});
 
-		if (username != null && !username.equals("")) {
-			System.out.println(username);
+		if (this.user != null && !this.user.equals("")) {
 			this.loginName.setText("username");
 		}
 
-		if (password != null && !password.equals("")) {
-			this.passwordField.setText(password);
+		if (this.password != null && !this.password.equals("")) {
+			this.passwordField.setText(this.password);
 		}
 
 	}
@@ -209,7 +207,7 @@ public class UserEditor extends JPanel {
 				return;
 			}
 
-			Object[] databases = result.getTable().get("name").toArray();
+			this.databases = result.getTable().get("name").toArray();
 
 			if (databases == null || databases.length == 0) {
 				return;
@@ -255,14 +253,12 @@ public class UserEditor extends JPanel {
 				model.addColumn(name);
 			}
 
+			dbRolesTable.getTableHeader().setReorderingAllowed(false);
 			dbRolesTable.setModel(model);
 			for (int i = 1; i < dbRolesTable.getColumnCount(); i++) {
 				TableColumn column0 = dbRolesTable.getColumnModel().getColumn(i);
 				column0.setCellRenderer(dbRolesTable.getDefaultRenderer(Boolean.class));
 				column0.setCellEditor(dbRolesTable.getDefaultEditor(Boolean.class));
-			}
-
-			for (Object database : databases) {
 			}
 
 			panel_1.setViewportView(dbRolesTable);
@@ -282,9 +278,14 @@ public class UserEditor extends JPanel {
 			var result = operation.executeRaw(command);
 			this.parent.getResultReader().loadResult(result);
 
-			command = new User(this.loginName.getText(), this.loginName.getText()).generateQuery();
-			result = operation.executeRaw(command);
-			this.parent.getResultReader().loadResult(result);
+			for (Object database : this.databases) {
+				ConnectionStringBuilder constr = this.conStrGenerator.copy().withDbName((String) database);
+				try (SQLOperation inner = new SQLOperation(constr.build())) {
+					command = new User(this.loginName.getText(), this.loginName.getText()).generateQuery();
+					result = inner.executeRaw(command);
+					this.parent.getResultReader().loadResult(result);
+				}
+			}
 
 			DefaultTableModel model = (DefaultTableModel) serverRolesTable.getModel();
 			int rowCount = model.getRowCount();
@@ -301,15 +302,24 @@ public class UserEditor extends JPanel {
 
 			model = (DefaultTableModel) dbRolesTable.getModel();
 			rowCount = model.getRowCount();
+			int columnCount = model.getColumnCount();
 
 			for (int i = 0; i < rowCount; i++) {
-				boolean assigned = (Boolean) model.getValueAt(i, 0);
-				String roleName = (String) model.getValueAt(i, 1);
-				if (assigned) {
-					result = operation.executeRaw(
-							String.format("EXEC sp_addrolemember '%s', '%s';", roleName, this.loginName.getText()));
-					this.parent.getResultReader().loadResult(result);
+				String database = (String) model.getValueAt(i, 0);
+				ConnectionStringBuilder constr = this.conStrGenerator.copy().withDbName(database);
+
+				for (int j = 1; j < columnCount; j++) {
+					boolean assigned = (Boolean) model.getValueAt(i, j);
+					String roleName = (String) model.getColumnName(j);
+					try (SQLOperation inner = new SQLOperation(constr.build())) {
+						if (assigned) {
+							result = inner.executeRaw(
+									String.format("EXEC sp_addrolemember '%s', '%s';", roleName, this.user));
+							this.parent.getResultReader().loadResult(result);
+						}
+					}
 				}
+
 			}
 
 			this.parent.getTreeView().loadDatabaseObjects();
@@ -342,19 +352,28 @@ public class UserEditor extends JPanel {
 
 			DefaultTableModel model = (DefaultTableModel) dbRolesTable.getModel();
 			int rowCount = model.getRowCount();
+			int columnCount = model.getColumnCount();
 
 			for (int i = 0; i < rowCount; i++) {
-				boolean assigned = (Boolean) model.getValueAt(i, 0);
-				String roleName = (String) model.getValueAt(i, 1);
-				if (!assigned) {
-					var result = operation
-							.executeRaw(String.format("EXEC sp_droprolemember '%s', '%s';", roleName, this.user));
-					this.parent.getResultReader().loadResult(result);
-				} else {
-					var result = operation
-							.executeRaw(String.format("EXEC sp_addrolemember '%s', '%s';", roleName, this.user));
-					this.parent.getResultReader().loadResult(result);
+				String database = (String) model.getValueAt(i, 0);
+				ConnectionStringBuilder constr = this.conStrGenerator.copy().withDbName(database);
+
+				for (int j = 1; j < columnCount; j++) {
+					boolean assigned = (Boolean) model.getValueAt(i, j);
+					String roleName = (String) model.getColumnName(j);
+					try (SQLOperation inner = new SQLOperation(constr.build())) {
+						if (!assigned) {
+							var result = inner.executeRaw(
+									String.format("EXEC sp_droprolemember '%s', '%s';", roleName, this.user));
+							this.parent.getResultReader().loadResult(result);
+						} else {
+							var result = inner.executeRaw(
+									String.format("EXEC sp_addrolemember '%s', '%s';", roleName, this.user));
+							this.parent.getResultReader().loadResult(result);
+						}
+					}
 				}
+
 			}
 
 			this.parent.getTreeView().loadDatabaseObjects();
@@ -383,34 +402,40 @@ public class UserEditor extends JPanel {
 			}
 
 			model = (DefaultTableModel) this.dbRolesTable.getModel();
-			result = operation.executeRaw(DefaultQuerys.getDBRolesQuery);
-			if (result.getStatus().equals(Status.FAILURE)) {
-				this.parent.getResultReader().loadResult(result);
-				return;
-			}
 
-			names = result.getTable().get("name");
-
-			for (int i = 0; i < names.size(); i++) {
-				model.addRow(new Object[] { false, names.get(i) });
+			for (Object database : this.databases) {
+				Object[] row = new Object[model.getColumnCount()];
+				row[0] = database;
+				for (int i = 1; i < row.length; i++) {
+					row[i] = false;
+				}
+				model.addRow(row);
 			}
 
 			if (this.modifyUser) {
-				result = operation.executeRaw(String.format(DefaultQuerys.getUserDBRolesQuery, user));
-				if (result.getStatus().equals(Status.FAILURE)) {
-					this.parent.getResultReader().loadResult(result);
-					return;
-				}
-
-				names = result.getTable().get("name");
-				for (int i = 0; i < names.size(); i++) {
-					for (int j = 0; j < model.getRowCount(); j++) {
-						if (((String) (model.getValueAt(j, 1))).equals((String) names.get(i))) {
-							model.setValueAt(true, j, 0);
+				for (int i = 0; i < this.databases.length; i++) {
+					ConnectionStringBuilder constr = this.conStrGenerator.copy().withDbName((String) databases[i]);
+					try (SQLOperation innerOp = new SQLOperation(constr.build())) {
+						result = innerOp.executeRaw(String.format(DefaultQuerys.getUserDBRolesQuery, this.user));
+						if (result.getStatus().equals(Status.FAILURE)) {
+							this.parent.getResultReader().loadResult(result);
+							return;
 						}
+
+						names = result.getTable().get("name");
+						for (int j = 0; j < names.size(); j++) {
+							for (int k = 1; k < model.getColumnCount(); k++) {
+								if (model.getColumnName(k).equals((String) names.get(j))) {
+									model.setValueAt(true, i, k);
+								}
+							}
+						}
+						this.dbRolesTable.revalidate();
 					}
 				}
 			}
+
+			this.dbRolesTable.getTableHeader().setReorderingAllowed(false);
 		} catch (Exception e) {
 			parent.getResultReader().loadResult(ResultFactory.fromException(e));
 		} finally {

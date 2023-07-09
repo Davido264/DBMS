@@ -39,5 +39,11 @@ WHERE DP1.type = 'R'
 AND DP2.name = '%s'
 ORDER BY DP1.name; 			
 """;
-	
+
+	public static final String dropUserIfExistsQuery = """
+IF EXISTS (SELECT 1 FROM sys.database_principals WHERE name = '%s' AND type = 'S')
+BEGIN
+    DROP USER [%s];
+END
+""";
 }

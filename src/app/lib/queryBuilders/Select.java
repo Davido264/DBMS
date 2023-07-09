@@ -29,7 +29,7 @@ public class Select implements QueryBuilder{
   public String generateQuery(Object... args) {
     var strBuilder = new StringBuilder();
     for (int i = 0 ; i < columns.length; i++) {
-      strBuilder.append(columns[i].toString());
+      strBuilder.append(String.format("%s.[%s]", this.tableName,columns[i].toString()));
 
       if (i != columns.length - 1) {
         strBuilder.append(", ");

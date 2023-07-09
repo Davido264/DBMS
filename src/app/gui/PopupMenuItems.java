@@ -6,6 +6,7 @@ import app.lib.queryBuilders.DefaultQuerys;
 import app.lib.queryBuilders.Select;
 import app.lib.queryBuilders.Drop;
 import app.lib.result.ResultFactory;
+import app.lib.result.Status;
 
 import java.awt.Cursor;
 import java.awt.event.ActionEvent;
@@ -210,12 +211,25 @@ public class PopupMenuItems {
             	
 				try (var sqlOperation = new SQLOperation(newConnectionStringBuilder.build())) {
 					parent.getFrame().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-					var query = Drop.user(user).generateQuery();
+					var query = Drop.login(user).generateQuery();
 					var result = sqlOperation.executeRaw(query);
 					parent.getResultReader().loadResult(result);
-					query = Drop.login(user).generateQuery();
+					query = DefaultQuerys.getDatabasesQuery;
 					result = sqlOperation.executeRaw(query);
-					parent.getResultReader().loadResult(result);
+					if (result.getStatus().equals(Status.FAILURE)) {
+						parent.getResultReader().loadResult(result);
+						return;
+					}
+			
+					ConnectionStringBuilder copy = newConnectionStringBuilder.copy();
+					for (Object database : result.getTable().get("name")) {
+						try (SQLOperation op = new SQLOperation(copy.withDbName((String)database).build())) {
+							query = String.format(DefaultQuerys.dropUserIfExistsQuery, user,user);
+							result = op.executeRaw(query);
+							parent.getResultReader().loadResult(result);
+						}
+					}
+			
 					parent.getTreeView().loadDatabaseObjects();
 				} catch(Exception ex) {
 					parent.getResultReader().loadResult(ResultFactory.fromException(ex));
