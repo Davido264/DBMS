@@ -49,9 +49,6 @@ public class Settings {
 			return Settings.empty;
 		}
 	
-		System.out.println(json);
-		
-		
 		try {
 			Settings settings = gson.fromJson(json, Settings.class);
 			return settings;
@@ -62,18 +59,20 @@ public class Settings {
 		}
 	}
 	
-	public final static Settings empty = new Settings(true,null,null);
+	public final static Settings empty = new Settings(true,null,null,false);
 
 	public boolean adminIntegrado;
 	public String usuarioAdmin;
 	public String claveAdmin;
+	public boolean imprimirComandos;
 	
 	public Settings() {}
 	
-	public Settings(boolean adminIntegrado, String usuarioAdmin, String claveAdmin) {
+	public Settings(boolean adminIntegrado, String usuarioAdmin, String claveAdmin, boolean printStatements) {
 		this.adminIntegrado = adminIntegrado;
 		this.usuarioAdmin = usuarioAdmin;
 		this.claveAdmin = claveAdmin;
+		this.imprimirComandos = printStatements;
 	}
 	
 }

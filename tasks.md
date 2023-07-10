@@ -1,3 +1,3 @@
 - [x] fix users and roles created error
-- [] create login with windows auth
+- [x] create login with windows auth
 - [] create file groups and partitions

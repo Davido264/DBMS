@@ -64,6 +64,11 @@ public class TreeView extends JPanel {
 	public void loadDatabaseObjects() {
 		try (var operation = new SQLOperation(this.parent.getConnectionStringBuilder().build())) {
 			this.parent.getFrame().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+			
+			if (this.parent.getSettings().imprimirComandos) {
+				System.out.println(DefaultQuerys.getDatabasesQuery);
+			}
+			
 			var result = operation.executeRaw(DefaultQuerys.getDatabasesQuery);
 			if (result.getStatus().equals(Status.FAILURE) || result.getType().equals(ResultType.STRING)) {
 				this.parent.getResultReader().loadResult(result);
@@ -145,6 +150,11 @@ public class TreeView extends JPanel {
 					try (var operation = new SQLOperation(conStr)) {
 						parent.getFrame().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 						if (expandedNode.getLevel() == DATABASE_LEVEL) {
+							
+							if (parent.getSettings().imprimirComandos) {
+								System.out.println(DefaultQuerys.getTablesQuery);
+							}
+							
 							var result = operation.executeRaw(DefaultQuerys.getTablesQuery);
 							var tables = result.getTable().get("name");
 						
@@ -160,6 +170,12 @@ public class TreeView extends JPanel {
 							
 							var columnsNode = new NeverLeafNode("Columnas");
 							expandedNode.add(columnsNode);
+							
+							
+							if (parent.getSettings().imprimirComandos) {
+								System.out.println(String.format(DefaultQuerys.getColumnsQuery, information[0], information[1]));
+							}
+							
 							var result = operation.executeRaw(String.format(DefaultQuerys.getColumnsQuery, information[0], information[1]));
 							var columns = result.getTable().get("name");
 
@@ -172,6 +188,11 @@ public class TreeView extends JPanel {
 						
 							var constraitsNode = new NeverLeafNode("Constraits");
 							expandedNode.add(constraitsNode);
+							
+							if (parent.getSettings().imprimirComandos) {
+								System.out.println(String.format(DefaultQuerys.getConstraitsQuery, information[0], information[1]));
+							}
+							
 							result = operation.executeRaw(String.format(DefaultQuerys.getConstraitsQuery, information[0], information[1]));
 							var constraits = result.getTable().get("name");
 						
@@ -183,6 +204,11 @@ public class TreeView extends JPanel {
 							
 							var triggersNode = new NeverLeafNode("Triggers");
 							expandedNode.add(triggersNode);
+							
+							if (parent.getSettings().imprimirComandos) {
+								System.out.println(String.format(DefaultQuerys.getTriggersQuery, information[1]));
+							}
+							
 							result = operation.executeRaw(String.format(DefaultQuerys.getTriggersQuery, information[1]));
 							var triggers = result.getTable().get("name");
 						
@@ -194,6 +220,11 @@ public class TreeView extends JPanel {
 							
 							var indexesNode = new NeverLeafNode("Índices");
 							expandedNode.add(indexesNode);
+							
+							if (parent.getSettings().imprimirComandos) {
+								System.out.println(String.format(DefaultQuerys.getIndexesQuery, information[1]));
+							}
+							
 							result = operation.executeRaw(String.format(DefaultQuerys.getIndexesQuery, information[1]));
 							var indexes = result.getTable().get("name");
 						
@@ -204,6 +235,11 @@ public class TreeView extends JPanel {
 							
 							var partitionsNode = new NeverLeafNode("Particiones");
 							expandedNode.add(partitionsNode);
+							
+							if (parent.getSettings().imprimirComandos) {
+								System.out.println(String.format(DefaultQuerys.getPartitionsQuery, information[1]));
+							}
+							
 							result = operation.executeRaw(String.format(DefaultQuerys.getPartitionsQuery, information[1]));
 							var partitions = result.getTable().get("name");
 						
@@ -237,6 +273,11 @@ public class TreeView extends JPanel {
 			var usersNode = new NeverLeafNode("Usuarios");
 			
 			root.add(usersNode);
+			
+			if (this.parent.getSettings().imprimirComandos) {
+				System.out.println(DefaultQuerys.getUsersQuery);
+			}
+			
 			result = operation.executeRaw(DefaultQuerys.getUsersQuery);
 			var users = result.getTable().get("name");
 						

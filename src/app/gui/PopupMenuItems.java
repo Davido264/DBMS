@@ -11,6 +11,7 @@ import app.lib.result.Status;
 import java.awt.Cursor;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
 
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
@@ -89,16 +90,20 @@ public class PopupMenuItems {
 				
 				try (var sqlOperation = new SQLOperation(parent.getConnectionStringBuilder().copy().withDbName("master").build())) {
 					parent.getFrame().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+
+					if (parent.getSettings().imprimirComandos) {
+						System.out.println(String.format(DefaultQuerys.createDatabaseQuery, databaseName));
+					}
+					
 					var result = sqlOperation.executeRaw(String.format(DefaultQuerys.createDatabaseQuery, databaseName));
 					parent.getResultReader().loadResult(result);
-					// TODO: split pane revalidate
-					parent.getTreeView().loadDatabaseObjects();
 				} catch(Exception ex) {
 					parent.getResultReader().loadResult(ResultFactory.fromException(ex));
 				} finally {
 					parent.getFrame().setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 				}
 
+				parent.getTreeView().loadDatabaseObjects();
             }
         });
 		
@@ -107,7 +112,6 @@ public class PopupMenuItems {
 	
 	
 	public static void fillRootPopupMenu(JPopupMenu popupMenu, Main parent) {
-		
 	    popupMenu.add(createNewDatabaseItem(parent));
 	    popupMenu.add(createQueryItem(parent,"master"));
 	}
@@ -119,14 +123,20 @@ public class PopupMenuItems {
 				try (var sqlOperation = new SQLOperation(parent.getConnectionStringBuilder().copy().withDbName("master").build())) {
 					parent.getFrame().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 					var query = Drop.database(database).generateQuery();
+					
+					if (parent.getSettings().imprimirComandos) {
+						System.out.println(query);
+					}
+					
 					var result = sqlOperation.executeRaw(query);
 					parent.getResultReader().loadResult(result);
-					parent.getTreeView().loadDatabaseObjects();
 				} catch(Exception ex) {
 					parent.getResultReader().loadResult(ResultFactory.fromException(ex));
 				} finally {
 					parent.getFrame().setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 				}
+
+				parent.getTreeView().loadDatabaseObjects();
             } 
 		});
 		
@@ -144,6 +154,11 @@ public class PopupMenuItems {
 				try (var sqlOperation = new SQLOperation(parent.getConnectionStringBuilder().copy().withDbName(database).build())) {
 					parent.getFrame().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 					var query = Select.all(splittedTable, 100).generateQuery();
+					
+					if (parent.getSettings().imprimirComandos) {
+						System.out.println(query);
+					}
+					
 					var result = sqlOperation.executeRaw(query);
 					parent.getTabs().createNewEditorTab(query,parent.getConnectionStringBuilder().copy());
 					parent.getResultReader().loadResult(result);
@@ -162,31 +177,27 @@ public class PopupMenuItems {
 				try (var sqlOperation = new SQLOperation(parent.getConnectionStringBuilder().build())) {
 					parent.getFrame().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 					var query = Drop.table(splittedTable).generateQuery();
+					
+					if (parent.getSettings().imprimirComandos) {
+						System.out.println(query);
+					}
+					
 					var result = sqlOperation.executeRaw(query);
 					parent.getResultReader().loadResult(result);
-					parent.getTreeView().loadDatabaseObjects();
 				} catch(Exception ex) {
 					parent.getResultReader().loadResult(ResultFactory.fromException(ex));
 				} finally {
 					parent.getFrame().setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 				}
+
+				parent.getTreeView().loadDatabaseObjects();
             } 
 		});
 		
 		JMenuItem menuItem3 = new JMenuItem("Particionar Tabla");
-		menuItem2.addActionListener(new ActionListener() {
+		menuItem3.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent event) {
-				try (var sqlOperation = new SQLOperation(parent.getConnectionStringBuilder().build())) {
-					parent.getFrame().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-					var query = Drop.table(table).generateQuery();
-					var result = sqlOperation.executeRaw(query);
-					parent.getResultReader().loadResult(result);
-					parent.getTreeView().loadDatabaseObjects();
-				} catch(Exception ex) {
-					parent.getResultReader().loadResult(ResultFactory.fromException(ex));
-				} finally {
-					parent.getFrame().setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
-				}
+            	new PartitionWizard(splittedTable).setVisible(true);
             } 
 		});
 		
@@ -194,6 +205,7 @@ public class PopupMenuItems {
 		popupMenu.add(menuItem1);
 		popupMenu.add(createQueryItem(parent,database));
 		popupMenu.add(createTablesItem(parent,database));
+		popupMenu.add(menuItem3);
 		popupMenu.add(menuItem2);
 	}
 	
@@ -214,35 +226,49 @@ public class PopupMenuItems {
             		newConnectionStringBuilder = newConnectionStringBuilder.withUserName(s.usuarioAdmin).withPassword(s.claveAdmin);
             	}
             	
-				try (var sqlOperation = new SQLOperation(newConnectionStringBuilder.build())) {
-					parent.getFrame().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-					var query = Drop.login(user).generateQuery();
-					var result = sqlOperation.executeRaw(query);
-					parent.getResultReader().loadResult(result);
-					query = DefaultQuerys.getDatabasesQuery;
-					result = sqlOperation.executeRaw(query);
-					if (result.getStatus().equals(Status.FAILURE)) {
-						parent.getResultReader().loadResult(result);
-						return;
-					}
-			
-					ConnectionStringBuilder copy = newConnectionStringBuilder.copy();
-					for (Object database : result.getTable().get("name")) {
-						try (SQLOperation op = new SQLOperation(copy.withDbName((String)database).build())) {
-							query = String.format(DefaultQuerys.dropUserIfExistsQuery, splittedUser,splittedUser);
-							System.out.println(query);
-							result = op.executeRaw(query);
-							System.out.println(result.getStatus());
+				try  {
+					ArrayList<Object> names;
+					try (var sqlOperation = new SQLOperation(newConnectionStringBuilder.build())) {
+						var query = DefaultQuerys.getDatabasesQuery;
+						var result = sqlOperation.executeRaw(query);
+						if (result.getStatus().equals(Status.FAILURE)) {
 							parent.getResultReader().loadResult(result);
+							return;
 						}
+						names = result.getTable().get("name");
 					}
-			
-					parent.getTreeView().loadDatabaseObjects();
+					
+					try (var sqlOperation = new SQLOperation(newConnectionStringBuilder.build())) {
+						StringBuilder sb = new StringBuilder();
+						parent.getFrame().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+						var query = Drop.login(user).generateQuery();
+						sb.append(query);
+						sb.append("\n");
+						sb.append("\n");
+	
+						for (Object database : names) {
+							sb.append(String.format("USE [%s];\n", (String) database));
+							query = String.format(DefaultQuerys.dropUserIfExistsQuery, splittedUser,splittedUser);
+							sb.append(query);
+							sb.append("\n\n");
+						}
+						
+						query = sb.toString();
+						
+						if(s.imprimirComandos) {
+							System.out.println(query);
+						}
+						
+						var result = sqlOperation.executeRaw(query);
+						parent.getResultReader().loadResult(result);
+					}			
 				} catch(Exception ex) {
 					parent.getResultReader().loadResult(ResultFactory.fromException(ex));
 				} finally {
 					parent.getFrame().setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 				}
+
+				parent.getTreeView().loadDatabaseObjects();
             } 
 		});
 	

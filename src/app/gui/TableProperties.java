@@ -291,16 +291,21 @@ public class TableProperties extends JPanel {
 	public void executeCreateTable() {
 		CreateTable generator = new CreateTable(this.textField.getText(),this.getColumnsFromEditor());
 		String command = generator.generateQuery();
+		
+		if (this.parent.getSettings().imprimirComandos) {
+			System.out.println(command);
+		}
+		
 		try (var operation = new SQLOperation(this.conStrGenerator.build())) {
 			this.parent.getFrame().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-				var result = operation.executeRaw(command);
-				this.parent.getResultReader().loadResult(result);
-				this.parent.getTreeView().loadDatabaseObjects();
+			var result = operation.executeRaw(command);
+			this.parent.getResultReader().loadResult(result);
 		} catch(Exception e) {
 			this.parent.getResultReader().loadResult(ResultFactory.fromException(e));
 		} finally {
 			this.parent.getFrame().setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 		}
+		this.parent.getTreeView().loadDatabaseObjects();
 	}
 	
 	

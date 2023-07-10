@@ -69,7 +69,7 @@ public class UserEditor extends JPanel {
 		this.passwordField = new JPasswordField();
 		JLabel lblNewLabel = new JLabel("Nombre de Usuario");
 		JLabel lblNewLabel_1 = new JLabel("Contraseña");
-	
+
 		if (this.user != null && !this.user.equals("")) {
 			this.loginName.setText(this.user);
 		}
@@ -77,8 +77,7 @@ public class UserEditor extends JPanel {
 		if (this.password != null && !this.password.equals("")) {
 			this.passwordField.setText(this.password);
 		}
-		
-		
+
 		this.loginName.setEditable(!modifyUser);
 		this.passwordField.setEditable(!modifyUser);
 
@@ -114,7 +113,8 @@ public class UserEditor extends JPanel {
 				if ((modifyUser && editUsername && !loginName.getText().equals("")) || !modifyUser) {
 					UserEditor.this.user = loginName.getText();
 				}
-				if ((modifyUser && editPassword && !new String(passwordField.getPassword()).strip().equals("")) || !modifyUser) {
+				if ((modifyUser && editPassword && !new String(passwordField.getPassword()).strip().equals(""))
+						|| !modifyUser) {
 					UserEditor.this.password = new String(passwordField.getPassword()).strip();
 				}
 
@@ -296,6 +296,7 @@ public class UserEditor extends JPanel {
 
 	private void executeCreateUser() {
 		try (var operation = new SQLOperation(this.conStrGenerator.build())) {
+			StringBuilder sb = new StringBuilder();
 			this.parent.getFrame().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 			String loginUser;
 
@@ -307,17 +308,10 @@ public class UserEditor extends JPanel {
 
 			String command = new Login(loginUser, new String(this.passwordField.getPassword()).strip(),
 					this.windowsAuth.isSelected()).generateQuery();
-			var result = operation.executeRaw(command);
-			this.parent.getResultReader().loadResult(result);
 
-			for (Object database : this.databases) {
-				ConnectionStringBuilder constr = this.conStrGenerator.copy().withDbName((String) database);
-				try (SQLOperation inner = new SQLOperation(constr.build())) {
-					command = new User(this.loginName.getText(), loginUser).generateQuery();
-					result = inner.executeRaw(command);
-					this.parent.getResultReader().loadResult(result);
-				}
-			}
+			sb.append(command);
+			sb.append("\n");
+			sb.append("\n");
 
 			DefaultTableModel model = (DefaultTableModel) serverRolesTable.getModel();
 			int rowCount = model.getRowCount();
@@ -327,10 +321,21 @@ public class UserEditor extends JPanel {
 				String roleName = (String) model.getValueAt(i, 1);
 				if (assigned) {
 					command = new AlterServerRole(roleName, this.loginName.getText()).generateQuery();
-					result = operation.executeRaw(command);
-					this.parent.getResultReader().loadResult(result);
+					sb.append(command);
+					sb.append("\n");
 				}
 			}
+
+			sb.append("\n");
+
+			for (Object database : this.databases) {
+				sb.append(String.format("USE [%s];\n", database));
+				command = new User(this.loginName.getText(), loginUser).generateQuery();
+				sb.append(command);
+				sb.append("\n");
+			}
+
+			sb.append("\n");
 
 			model = (DefaultTableModel) dbRolesTable.getModel();
 			rowCount = model.getRowCount();
@@ -338,49 +343,55 @@ public class UserEditor extends JPanel {
 
 			for (int i = 0; i < rowCount; i++) {
 				String database = (String) model.getValueAt(i, 0);
-				ConnectionStringBuilder constr = this.conStrGenerator.copy().withDbName(database);
+				sb.append(String.format("USE [%s];\n", database));
 
 				for (int j = 1; j < columnCount; j++) {
 					boolean assigned = (Boolean) model.getValueAt(i, j);
 					String roleName = (String) model.getColumnName(j);
-					try (SQLOperation inner = new SQLOperation(constr.build())) {
-						if (assigned) {
-							result = inner.executeRaw(
-									String.format("EXEC sp_addrolemember '%s', '%s';", roleName, this.user));
-							this.parent.getResultReader().loadResult(result);
-						}
+					if (assigned) {
+						sb.append(String.format("EXEC sp_addrolemember '%s', '%s';\n", roleName, this.user));
 					}
 				}
-
 			}
 
-			this.parent.getTreeView().loadDatabaseObjects();
+			String script = sb.toString();
+			if (this.parent.getSettings().imprimirComandos) {
+				System.out.println(script);
+			}
+			var result = operation.executeRaw(script);
+			System.out.println(result.getStatus());
+
 		} catch (Exception e) {
 			this.parent.getResultReader().loadResult(ResultFactory.fromException(e));
 		} finally {
 			this.parent.getFrame().setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 		}
+
+		this.parent.getTreeView().loadDatabaseObjects();
 	}
 
 	private void executeAlterUser() {
 		try (var operation = new SQLOperation(this.conStrGenerator.build())) {
+			StringBuilder sb = new StringBuilder();
 			this.parent.getFrame().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 			if (this.editUsername) {
 				AlterUser generator = new AlterUser(this.loginName.getText(), AlterUser.Fields.NAME,
 						this.loginName.getText());
 				String command = generator.generateQuery();
-				var result = operation.executeRaw(command);
-				this.parent.getResultReader().loadResult(result);
+				sb.append(command);
+				sb.append("\n");
 			}
 
 			if (this.editPassword) {
 				AlterUser generator = new AlterUser(this.loginName.getText(), AlterUser.Fields.PASSWORD,
 						this.loginName.getText());
 				String command = generator.generateQuery();
-				var result = operation.executeRaw(command);
-				this.parent.getResultReader().loadResult(result);
+				sb.append(command);
+				sb.append("\n");
 
 			}
+
+			sb.append("\n");
 
 			DefaultTableModel model = (DefaultTableModel) dbRolesTable.getModel();
 			int rowCount = model.getRowCount();
@@ -388,73 +399,84 @@ public class UserEditor extends JPanel {
 
 			for (int i = 0; i < rowCount; i++) {
 				String database = (String) model.getValueAt(i, 0);
-				ConnectionStringBuilder constr = this.conStrGenerator.copy().withDbName(database);
+				sb.append(String.format("USE [%s];\n", database));
 
 				for (int j = 1; j < columnCount; j++) {
 					boolean assigned = (Boolean) model.getValueAt(i, j);
 					String roleName = (String) model.getColumnName(j);
-					try (SQLOperation inner = new SQLOperation(constr.build())) {
-						if (!assigned) {
-							var result = inner.executeRaw(
-									String.format("EXEC sp_droprolemember '%s', '%s';", roleName, this.user));
-							this.parent.getResultReader().loadResult(result);
-						} else {
-							var result = inner.executeRaw(
-									String.format("EXEC sp_addrolemember '%s', '%s';", roleName, this.user));
-							this.parent.getResultReader().loadResult(result);
-						}
+					if (!assigned) {
+						sb.append(String.format("EXEC sp_droprolemember '%s', '%s';\n", roleName, this.user));
+					} else {
+						sb.append(String.format("EXEC sp_addrolemember '%s', '%s';\n", roleName, this.user));
 					}
 				}
 
 			}
 
-			this.parent.getTreeView().loadDatabaseObjects();
+			String script = sb.toString();
+			if (this.parent.getSettings().imprimirComandos) {
+				System.out.println(script);
+			}
+			var result = operation.executeRaw(script);
+			System.out.println(result.getStatus());
+
 		} catch (Exception e) {
 			this.parent.getResultReader().loadResult(ResultFactory.fromException(e));
 		} finally {
 			this.parent.getFrame().setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 		}
 
+		this.parent.getTreeView().loadDatabaseObjects();
 	}
 
 	private void fillTableRole() {
-		try (var operation = new SQLOperation(this.conStrGenerator.build())) {
-			parent.getFrame().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-			DefaultTableModel model = (DefaultTableModel) this.serverRolesTable.getModel();
-			var result = operation.executeRaw(DefaultQuerys.getRolesQuery);
-			if (result.getStatus().equals(Status.FAILURE)) {
-				this.parent.getResultReader().loadResult(result);
-				return;
-			}
+		try {
+			try (var operation = new SQLOperation(this.conStrGenerator.build())) {
+				parent.getFrame().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+				DefaultTableModel model = (DefaultTableModel) this.serverRolesTable.getModel();
+				var result = operation.executeRaw(DefaultQuerys.getRolesQuery);
 
-			var names = result.getTable().get("name");
-
-			for (int i = 0; i < names.size(); i++) {
-				model.addRow(new Object[] { false, names.get(i) });
-			}
-
-			model = (DefaultTableModel) this.dbRolesTable.getModel();
-
-			for (Object database : this.databases) {
-				Object[] row = new Object[model.getColumnCount()];
-				row[0] = database;
-				for (int i = 1; i < row.length; i++) {
-					row[i] = false;
+				if (this.parent.getSettings().imprimirComandos) {
+					System.out.println(DefaultQuerys.getRolesQuery);
 				}
-				model.addRow(row);
+
+				if (result.getStatus().equals(Status.FAILURE)) {
+					this.parent.getResultReader().loadResult(result);
+					return;
+				}
+
+				var names = result.getTable().get("name");
+
+				for (int i = 0; i < names.size(); i++) {
+					model.addRow(new Object[] { false, names.get(i) });
+				}
+
+				model = (DefaultTableModel) this.dbRolesTable.getModel();
+
+				for (Object database : this.databases) {
+					Object[] row = new Object[model.getColumnCount()];
+					row[0] = database;
+					for (int i = 1; i < row.length; i++) {
+						row[i] = false;
+					}
+					model.addRow(row);
+				}
+
+				this.dbRolesTable.getTableHeader().setReorderingAllowed(false);
 			}
 
+			DefaultTableModel model = (DefaultTableModel) this.dbRolesTable.getModel();
 			if (this.modifyUser) {
 				for (int i = 0; i < this.databases.length; i++) {
 					ConnectionStringBuilder constr = this.conStrGenerator.copy().withDbName((String) databases[i]);
-					try (SQLOperation innerOp = new SQLOperation(constr.build())) {
-						result = innerOp.executeRaw(String.format(DefaultQuerys.getUserDBRolesQuery, this.user));
+					try (SQLOperation op = new SQLOperation(constr.build())) {
+						var result = op.executeRaw(String.format(DefaultQuerys.getUserDBRolesQuery, this.user));
 						if (result.getStatus().equals(Status.FAILURE)) {
 							this.parent.getResultReader().loadResult(result);
 							return;
 						}
 
-						names = result.getTable().get("name");
+						var names = result.getTable().get("name");
 						for (int j = 0; j < names.size(); j++) {
 							for (int k = 1; k < model.getColumnCount(); k++) {
 								if (model.getColumnName(k).equals((String) names.get(j))) {
@@ -466,13 +488,10 @@ public class UserEditor extends JPanel {
 					}
 				}
 			}
-
-			this.dbRolesTable.getTableHeader().setReorderingAllowed(false);
 		} catch (Exception e) {
 			parent.getResultReader().loadResult(ResultFactory.fromException(e));
 		} finally {
 			parent.getFrame().setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 		}
-
 	}
 }
