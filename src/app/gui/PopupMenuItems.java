@@ -88,7 +88,7 @@ public class PopupMenuItems {
 					return;
 				}
 				
-				try (var sqlOperation = new SQLOperation(parent.getConnectionStringBuilder().copy().withDbName("master").build())) {
+				try (var sqlOperation = new SQLOperation(parent.getConnectionStringBuilder().copy().withDbName("master").build(),true)) {
 					parent.getFrame().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 
 					if (parent.getSettings().imprimirComandos) {
@@ -147,7 +147,7 @@ public class PopupMenuItems {
 	
 	public static void fillTablesPopupMenu(JPopupMenu popupMenu, Main parent, String table, String database) {
 		String[] arr = table.split("\\.");
-		String splittedTable = arr[arr.length - 1];
+		String splittedTable = arr[1];
 		JMenuItem menuItem1 = new JMenuItem("Seleccionar los primeros 100");
 		menuItem1.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent event) {
@@ -197,7 +197,7 @@ public class PopupMenuItems {
 		JMenuItem menuItem3 = new JMenuItem("Particionar Tabla");
 		menuItem3.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent event) {
-            	new PartitionWizard(splittedTable).setVisible(true);
+            	new PartitionWizard(arr[0],splittedTable,database,parent,parent.getConnectionStringBuilder().copy()).setVisible(true);
             } 
 		});
 		

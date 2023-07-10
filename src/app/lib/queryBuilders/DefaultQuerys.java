@@ -4,7 +4,7 @@ public class DefaultQuerys {
 	public static final String createDatabaseQuery = "CREATE DATABASE %s;";
 	public static final String dropDatabaseQuery = "DROP DATABASE %s;";
 	public static final String getDatabasesQuery = "SELECT name FROM sys.databases WHERE database_id > 4 AND HAS_DBACCESS(name) = 1;";
-	public static final String getColumnsQuery = "SELECT CONCAT(column_name,'(',data_type,')') as name FROM information_schema.columns WHERE table_schema = '%s' AND table_name = '%s';";
+	public static final String getColumnsQuery = "SELECT CONCAT(column_name,'(',data_type,' ',character_maximum_length,')') as name FROM information_schema.columns WHERE table_schema = '%s' AND table_name = '%s';";
 	public static final String getColumnNamesQuery = "SELECT column_name as name FROM information_schema.columns WHERE table_schema = '%s' AND table_name = '%s';";
 	public static final String getTriggersQuery = "SELECT name FROM sys.triggers WHERE parent_id = OBJECT_ID('%s');";
 	public static final String getIndexesQuery = "SELECT name FROM sys.indexes WHERE object_id = OBJECT_ID('%s');";
