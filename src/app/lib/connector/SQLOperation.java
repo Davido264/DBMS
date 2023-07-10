@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Savepoint;
 import app.lib.result.*;
 
 
@@ -12,6 +13,7 @@ public class SQLOperation implements  java.lang.AutoCloseable {
   private final String connectionString;
   private Connection connection;
   private Statement statement;
+  private Savepoint latestSavePoint;
 
   public SQLOperation(String connectionString) {
     this.connectionString = connectionString; 
@@ -25,6 +27,8 @@ public class SQLOperation implements  java.lang.AutoCloseable {
   public Result executeRaw(String sqlStatement) {
     try {
       this.connect();
+      this.connection.setAutoCommit(false);
+      this.latestSavePoint = this.connection.setSavepoint();
       this.statement = this.connection.createStatement();
       var hasResultSet = statement.execute(sqlStatement);
       var rowsAffected = statement.getUpdateCount();
@@ -41,6 +45,11 @@ public class SQLOperation implements  java.lang.AutoCloseable {
       }
 
     } catch (Exception e) {
+      try {
+        this.connection.rollback(this.latestSavePoint);
+      } catch (SQLException ex) {
+    	  ex.printStackTrace();
+      }
       return ResultFactory.fromException(e);
     }
   }
@@ -52,6 +61,8 @@ public class SQLOperation implements  java.lang.AutoCloseable {
 		  this.statement.close();
 	  }
 	  if (this.connection != null && !this.connection.isClosed()) {
+		  this.connection.commit();
+		  this.latestSavePoint = this.connection.setSavepoint();
 		  this.connection.close();
 	  }
   }
