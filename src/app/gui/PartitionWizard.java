@@ -213,7 +213,7 @@ public class PartitionWizard extends JDialog {
 		} else if (f.equals(FragmentationType.VERTICAL)) {
 			setVerticalModel();
 		} else {
-
+			setMixModel();
 		}
 
 		this.table.revalidate();
@@ -731,6 +731,326 @@ public class PartitionWizard extends JDialog {
 	}
 
 	private void setMixModel() {
+		DefaultTableModel model = new DefaultTableModel() {
+			@Override
+			public Class<?> getColumnClass(int columnIndex) {
+				return columnIndex > 1 ? Boolean.class : String.class;
+			}
+
+			@Override
+			public boolean isCellEditable(int row, int column) {
+				return true;
+			}
+
+		};
+		model.addColumn("Columna");
+		model.addColumn("Condición");
+
+		// Crear un ComboBoxEditor personalizado
+		ComboBoxEditor editor = new ComboBoxEditor() {
+			private JTextField editorComponent;
+
+			@Override
+			public Component getEditorComponent() {
+				if (editorComponent == null) {
+					editorComponent = new JTextField();
+					editorComponent.setEditable(false);
+				}
+				return editorComponent;
+			}
+
+			@Override
+			public void setItem(Object item) {
+				if (editorComponent != null) {
+					editorComponent.setText(item.toString());
+				}
+			}
+
+			@Override
+			public Object getItem() {
+				if (editorComponent != null) {
+					return editorComponent.getText();
+				}
+				return null;
+			}
+
+			@Override
+			public void selectAll() {
+				if (editorComponent != null) {
+					editorComponent.selectAll();
+				}
+			}
+
+			@Override
+			public void addActionListener(ActionListener l) {
+				if (editorComponent != null) {
+					editorComponent.addActionListener(l);
+				}
+			}
+
+			@Override
+			public void removeActionListener(ActionListener l) {
+				if (editorComponent != null) {
+					editorComponent.removeActionListener(l);
+				}
+			}
+		};
+
+		for (Object column : this.columns) {
+			model.addColumn(column);
+		}
+
+		this.table.setModel(model);
+		this.table.getTableHeader().setReorderingAllowed(false);
+		TableCellEditor cellEditor = table.getDefaultEditor(Object.class);
+
+		JTextField textField = (JTextField) cellEditor.getTableCellEditorComponent(table, null, true, 0, 1);
+
+		((AbstractDocument) textField.getDocument()).setDocumentFilter(new DocumentFilter() {
+			@Override
+			public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs)
+					throws BadLocationException {
+				// restringir ; y palabras clave de SQL
+				if (text != null && text.matches("[^;]")) {
+					super.replace(fb, offset, length, text, attrs);
+				}
+			}
+		});
+
+		JComboBox comboBox = new JComboBox(this.columns == null ? new Object[] {} : this.columns);
+		comboBox.setEditor(editor);
+		TableColumn column2 = table.getColumnModel().getColumn(0);
+		column2.setCellEditor(new DefaultCellEditor(comboBox));
+
+		table.setModel(model);
+		for (int i = 2; i < table.getColumnCount(); i++) {
+			TableColumn column0 = table.getColumnModel().getColumn(i);
+			column0.setCellRenderer(table.getDefaultRenderer(Boolean.class));
+			column0.setCellEditor(table.getDefaultEditor(Boolean.class));
+		}
+
+		this.execute = () -> {
+			try (SQLOperation sqlOp = new SQLOperation(this.constr.build())) {
+				this.parent.getFrame().setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+				DefaultTableModel tmodel = (DefaultTableModel) this.table.getModel();
+				int rows = tmodel.getRowCount();
+
+				if (rows == 0) {
+					return true;
+				}
+
+				StringBuilder sb = new StringBuilder();
+				ArrayList<String>[] columns = new ArrayList[tmodel.getRowCount()];
+				String[] newTables = new String[tmodel.getRowCount()];
+
+				String altDB = this.comboBox_1.getSelectedItem().toString();
+
+				if (!altDB.equals(this.database)) {
+					sb.append(String.format("USE [%s];\n", altDB));
+				}
+				for (int i = 0; i < rows; i++) {
+					String newTableName = String.format("%s_%s_%s", this.tableName, this.textField_1.getText(),
+							UUID.randomUUID().toString().substring(0, 8).replace('-', '_'));
+
+					int k = 0;
+					for (int j = 2; j < tmodel.getColumnCount(); j++) {
+						if (tmodel.getValueAt(i, j) != null && (Boolean) tmodel.getValueAt(i, j)) {
+							if (columns[i] == null) {
+								columns[i] = new ArrayList<String>(tmodel.getColumnCount());
+							}
+							columns[i].add(String.format("[%s]", tmodel.getColumnName(j)));
+							k++;
+						}
+					}
+
+					sb.append(String.format("SELECT \n\t%s \nINTO [%s].[%s] \nFROM [%s].[%s].[%s]\n",
+							String.join(",\n\t", columns[i]), this.schemaName, newTableName, this.database,
+							this.schemaName, this.tableName));
+					if (tmodel.getValueAt(i, 1) != null && tmodel.getValueAt(i, 0) != null) {
+						sb.append(String.format("WHERE %s %s;\n\n", tmodel.getValueAt(i, 0), tmodel.getValueAt(i, 1)));
+					}
+					newTables[i] = newTableName;
+				}
+
+				String query = sb.toString();
+				if (this.parent.getSettings().imprimirComandos) {
+					System.out.println(query);
+				}
+
+				var result = sqlOp.executeRaw(query);
+
+				if (result.getStatus().equals(Status.FAILURE)) {
+					this.parent.getResultReader().loadResult(result);
+					return true;
+				}
+
+				sb.setLength(0);
+
+				if (!altDB.equals(this.database)) {
+					sb.append(String.format("USE [%s];\n", this.database));
+
+					query = sb.toString();
+					if (this.parent.getSettings().imprimirComandos) {
+						System.out.println(query);
+					}
+
+					result = sqlOp.executeRaw(query);
+
+					if (result.getStatus().equals(Status.FAILURE)) {
+						this.parent.getResultReader().loadResult(result);
+						return true;
+					}
+					sb.setLength(0);
+				}
+
+				sb.append(String.format("CREATE OR ALTER VIEW [%s].[%s_view_frag_%s] AS\n", this.schemaName,
+						this.tableName, this.textField_1.getText()));
+
+				String allCols = "";
+				ArrayList<String>[] cols = new ArrayList[columns.length];
+				for (int i = 0; i < cols.length; i++) {
+					for (int j = 0; j < columns[i].size(); j++) {
+						if (cols[i] == null) {
+							cols[i] = new ArrayList<String>(columns[i].size());
+						}
+						cols[i].add(String.format("[%s].%s", ((char) (i + 65)), columns[i].get(j)));
+					}
+
+					if (allCols.equals("")) {
+						allCols = String.join(",\n\t", cols[i]);
+						continue;
+					}
+					allCols = String.format("%s,\n\t%s", allCols, String.join(",\n\t", cols[i]));
+				}
+
+				sb.append(String.format("SELECT \n\t%s \nFROM [%s].[%s].[%s] %s", allCols, altDB, this.schemaName,
+						newTables[0], ((char) 65)));
+				for (int i = 1; i < newTables.length; i++) {
+					sb.append(String.format(",\n[%s].[%s].[%s] %s", altDB, this.schemaName, newTables[i],
+							((char) (i + 65))));
+					if (i == newTables.length - 1) {
+						continue;
+					}
+				}
+
+				sb.append(";\n");
+
+				query = sb.toString();
+				if (this.parent.getSettings().imprimirComandos) {
+					System.out.println(query);
+				}
+
+				result = sqlOp.executeRaw(query);
+
+				if (result.getStatus().equals(Status.FAILURE)) {
+					this.parent.getResultReader().loadResult(result);
+					return true;
+				}
+				sb.setLength(0);
+
+				sb.append(String.format("CREATE OR ALTER TRIGGER [%s].[%s_trg_%s_insert]\n", this.schemaName,
+						this.tableName, this.textField_1.getText()));
+				sb.append(String.format("ON [%s]\n", this.tableName));
+				sb.append("AFTER INSERT\n");
+				sb.append("AS BEGIN\n");
+				for (int i = 0; i < rows; i++) {
+					String newTableName = newTables[i];
+					sb.append(String.format("INSERT INTO [%s].[%s].[%s]\n", altDB, this.schemaName, newTableName));
+					sb.append(String.format("SELECT %s FROM INSERTED\n", String.join(", ", columns[i])));
+					sb.append(String.format("WHERE %s %s;\n\n", tmodel.getValueAt(i, 0), tmodel.getValueAt(i, 1)));
+				}
+				sb.append("END;\n\n");
+
+				query = sb.toString();
+				if (this.parent.getSettings().imprimirComandos) {
+					System.out.println(query);
+				}
+
+				result = sqlOp.executeRaw(query);
+
+				if (result.getStatus().equals(Status.FAILURE)) {
+					this.parent.getResultReader().loadResult(result);
+					return true;
+				}
+				sb.setLength(0);
+
+				sb.append(String.format("CREATE OR ALTER TRIGGER [%s].[%s_trg_%s_delete]\n", this.schemaName,
+						this.tableName, this.textField_1.getText()));
+				sb.append(String.format("ON [%s]\n", this.tableName));
+				sb.append("AFTER DELETE\n");
+				sb.append("AS BEGIN\n");
+
+				for (int i = 0; i < newTables.length; i++) {
+					String[] params = new String[columns[i].size()];
+					for (int j = 0; j < params.length; j++) {
+						params[j] = String.format("[s].%s = [i].%s", columns[i].get(j), columns[i].get(j));
+					}
+					String predicate = String.join("\nAND ", params);
+
+					sb.append(String.format("DELETE FROM [%s].[%s].[%s] s INNER JOIN DELETED i \nON %s;\n\n", altDB,
+							this.schemaName, newTables[i], predicate));
+				}
+				sb.append("END;\n\n");
+
+				query = sb.toString();
+				if (this.parent.getSettings().imprimirComandos) {
+					System.out.println(query);
+				}
+
+				sb.setLength(0);
+
+				if (result.getStatus().equals(Status.FAILURE)) {
+					this.parent.getResultReader().loadResult(result);
+					return true;
+				}
+				sb = new StringBuilder();
+
+				sb.append(String.format("CREATE OR ALTER TRIGGER [%s].[%s_V_trg_%s_update]\n", this.schemaName,
+						this.tableName, this.textField_1.getText()));
+				sb.append(String.format("ON [%s]\n", this.tableName));
+				sb.append("AFTER UPDATE\n");
+				sb.append("AS BEGIN\n");
+
+				for (int i = 0; i < newTables.length; i++) {
+
+					String[] params = new String[columns[i].size()];
+					for (int k = 0; k < params.length; k++) {
+						params[k] = String.format("[s].%s = [i].%s", columns[i].get(k), columns[i].get(k));
+					}
+
+					String changes = String.join(",\n", params);
+					for (int j = 0; j < params.length; j++) {
+						params[j] = String.format("[s].%s = [i].%s", columns[i].get(j), columns[i].get(j));
+					}
+
+					String predicate = String.join("\nAND ", params);
+					sb.append(
+							String.format("UPDATE s SET %s \nFROM [%s].[%s].[%s] s\nINNER JOIN INSERTED i \nON %s;\n\n",
+									changes, altDB, this.schemaName, newTables[i], predicate));
+				}
+				sb.append("END;\n\n");
+
+				query = sb.toString();
+				if (this.parent.getSettings().imprimirComandos) {
+					System.out.println(query);
+				}
+
+				result = sqlOp.executeRaw(query);
+
+				if (result.getStatus().equals(Status.FAILURE)) {
+					this.parent.getResultReader().loadResult(result);
+					return true;
+				}
+				return true;
+
+			} catch (Exception e) {
+				this.parent.getResultReader().loadResult(ResultFactory.fromException(e));
+				return false;
+			} finally {
+				this.parent.getFrame().setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+			}
+
+		};
 
 	}
 
