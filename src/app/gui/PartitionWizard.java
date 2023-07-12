@@ -56,6 +56,7 @@ public class PartitionWizard extends JDialog {
 	private Object[] columnsWithInfo;
 	private FragmentationType currentDisplayType;
 	private Supplier<Boolean> execute;
+	private JTextField textField_1;
 
 	/**
 	 * Create the dialog.
@@ -68,7 +69,7 @@ public class PartitionWizard extends JDialog {
 		this.parent = parent;
 		this.database = database;
 		this.currentDisplayType = FragmentationType.HORIZONTAL;
-		setBounds(100, 100, 507, 446);
+		setBounds(100, 100, 507, 481);
 		getContentPane().setLayout(new BorderLayout());
 		contentPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
 		getContentPane().add(contentPanel, BorderLayout.NORTH);
@@ -142,39 +143,54 @@ public class PartitionWizard extends JDialog {
 					((DefaultTableModel) table.getModel()).addRow(new Object[] {});
 				}
 			});
+
+			textField_1 = new JTextField();
+			textField_1.setColumns(10);
+
+			((AbstractDocument) textField_1.getDocument()).setDocumentFilter(new DocumentFilter() {
+				@Override
+				public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs)
+						throws BadLocationException {
+					// restringir ; y palabras clave de SQL
+					if (text != null && text.matches("[^;]")) {
+						super.replace(fb, offset, length, text, attrs);
+					}
+				}
+			});
+
+			JLabel lblNewLabel_4 = new JLabel("Nombre de la particion");
 			GroupLayout gl_panel = new GroupLayout(panel);
-			gl_panel.setHorizontalGroup(
-					gl_panel.createParallelGroup(Alignment.TRAILING)
-							.addGroup(gl_panel.createSequentialGroup().addContainerGap()
-									.addGroup(gl_panel.createParallelGroup(Alignment.LEADING)
-											.addComponent(comboBox, 0, 471, Short.MAX_VALUE).addComponent(lblNewLabel_1)
-											.addGroup(Alignment.TRAILING,
-													gl_panel.createSequentialGroup().addComponent(lblNewLabel_2)
-															.addPreferredGap(ComponentPlacement.RELATED, 264,
-																	Short.MAX_VALUE)
-															.addComponent(btnNewButton))
-											.addComponent(comboBox_1, 0, 471, Short.MAX_VALUE)
-											.addComponent(lblNewLabel_3)
-											.addComponent(scrollPane, GroupLayout.DEFAULT_SIZE, 471, Short.MAX_VALUE))
-									.addContainerGap()));
-			gl_panel.setVerticalGroup(
-					gl_panel.createParallelGroup(Alignment.LEADING)
-							.addGroup(
-									gl_panel.createSequentialGroup().addContainerGap().addComponent(lblNewLabel_1)
-											.addPreferredGap(ComponentPlacement.RELATED)
-											.addComponent(comboBox, GroupLayout.PREFERRED_SIZE,
-													GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-											.addPreferredGap(ComponentPlacement.RELATED)
-											.addGroup(gl_panel.createParallelGroup(Alignment.LEADING)
-													.addComponent(btnNewButton).addComponent(lblNewLabel_2))
-											.addGap(12)
-											.addComponent(scrollPane, GroupLayout.PREFERRED_SIZE, 163,
-													GroupLayout.PREFERRED_SIZE)
-											.addPreferredGap(ComponentPlacement.UNRELATED).addComponent(lblNewLabel_3)
-											.addPreferredGap(ComponentPlacement.RELATED)
-											.addComponent(comboBox_1, GroupLayout.PREFERRED_SIZE,
-													GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-											.addGap(33)));
+			gl_panel.setHorizontalGroup(gl_panel.createParallelGroup(Alignment.TRAILING)
+					.addGroup(gl_panel.createSequentialGroup().addContainerGap()
+							.addGroup(gl_panel.createParallelGroup(Alignment.LEADING)
+									.addComponent(comboBox_1, Alignment.TRAILING, 0, 471, Short.MAX_VALUE)
+									.addComponent(lblNewLabel_3)
+									.addComponent(scrollPane, GroupLayout.DEFAULT_SIZE, 471, Short.MAX_VALUE)
+									.addGroup(gl_panel.createSequentialGroup().addComponent(lblNewLabel_2)
+											.addPreferredGap(ComponentPlacement.RELATED, 264, Short.MAX_VALUE)
+											.addComponent(btnNewButton))
+									.addComponent(comboBox, 0, 471, Short.MAX_VALUE).addComponent(lblNewLabel_1)
+									.addComponent(textField_1, GroupLayout.DEFAULT_SIZE, 471, Short.MAX_VALUE)
+									.addComponent(lblNewLabel_4))
+							.addContainerGap()));
+			gl_panel.setVerticalGroup(gl_panel.createParallelGroup(Alignment.LEADING).addGroup(gl_panel
+					.createSequentialGroup().addGap(4).addComponent(lblNewLabel_4)
+					.addPreferredGap(ComponentPlacement.RELATED)
+					.addComponent(textField_1, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
+							GroupLayout.PREFERRED_SIZE)
+					.addPreferredGap(ComponentPlacement.UNRELATED).addComponent(lblNewLabel_1)
+					.addPreferredGap(ComponentPlacement.RELATED)
+					.addComponent(
+							comboBox, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+					.addGap(18)
+					.addGroup(gl_panel.createParallelGroup(Alignment.TRAILING).addComponent(lblNewLabel_2)
+							.addComponent(btnNewButton))
+					.addPreferredGap(ComponentPlacement.RELATED)
+					.addComponent(scrollPane, GroupLayout.PREFERRED_SIZE, 163, GroupLayout.PREFERRED_SIZE)
+					.addPreferredGap(ComponentPlacement.RELATED).addComponent(lblNewLabel_3)
+					.addPreferredGap(ComponentPlacement.RELATED).addComponent(comboBox_1, GroupLayout.PREFERRED_SIZE,
+							GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+					.addGap(22)));
 
 			table = new JTable();
 			table.getTableHeader().setReorderingAllowed(false);
@@ -298,8 +314,8 @@ public class PartitionWizard extends JDialog {
 					sb.append(String.format("USE [%s];\n", altDB));
 				}
 				for (int i = 0; i < rows; i++) {
-					String newTableName = String.format("%s_%s", this.tableName,
-							UUID.randomUUID().toString().replace('-', '_'));
+					String newTableName = String.format("%s_%s_%s", this.tableName, this.textField_1.getText(),
+							UUID.randomUUID().toString().substring(0, 8).replace('-', '_'));
 					sb.append(String.format("SELECT * INTO [%s].[%s] FROM [%s].[%s].[%s]\n", this.schemaName,
 							newTableName, this.database, this.schemaName, this.tableName));
 					sb.append(String.format("WHERE %s %s;\n", tmodel.getValueAt(i, 0), tmodel.getValueAt(i, 1)));
@@ -337,8 +353,8 @@ public class PartitionWizard extends JDialog {
 					sb.setLength(0);
 				}
 
-				sb.append(String.format("CREATE OR ALTER VIEW [%s].[%s_view_frag_h] AS\n", this.schemaName,
-						this.tableName));
+				sb.append(String.format("CREATE OR ALTER VIEW [%s].[%s_view_frag_%s] AS\n", this.schemaName,
+						this.tableName, this.textField_1.getText()));
 
 				String[] cols = new String[this.columns.length];
 				for (int i = 0; i < cols.length; i++) {
@@ -370,8 +386,8 @@ public class PartitionWizard extends JDialog {
 				}
 				sb.setLength(0);
 
-				sb.append(String.format("CREATE OR ALTER TRIGGER [%s].[%s_H_trg_frag_insert]\n", this.schemaName,
-						this.tableName));
+				sb.append(String.format("CREATE OR ALTER TRIGGER [%s].[%s_trg_%s_insert]\n", this.schemaName,
+						this.tableName, this.textField_1.getText()));
 				sb.append(String.format("ON [%s]\n", this.tableName));
 				sb.append("AFTER INSERT\n");
 				sb.append("AS BEGIN\n");
@@ -396,8 +412,8 @@ public class PartitionWizard extends JDialog {
 				}
 				sb.setLength(0);
 
-				sb.append(String.format("CREATE OR ALTER TRIGGER [%s].[%s_H_trg_frag_delete]\n", this.schemaName,
-						this.tableName));
+				sb.append(String.format("CREATE OR ALTER TRIGGER [%s].[%s_trg_%s_delete]\n", this.schemaName,
+						this.tableName, this.textField_1.getText()));
 				sb.append(String.format("ON [%s]\n", this.tableName));
 				sb.append("AFTER DELETE\n");
 				sb.append("AS BEGIN\n");
@@ -428,8 +444,8 @@ public class PartitionWizard extends JDialog {
 				}
 				sb = new StringBuilder();
 
-				sb.append(String.format("CREATE OR ALTER TRIGGER [%s].[%s_H_trg_frag_update]\n", this.schemaName,
-						this.tableName));
+				sb.append(String.format("CREATE OR ALTER TRIGGER [%s].[%s_trg_%s_update]\n", this.schemaName,
+						this.tableName, this.textField_1.getText()));
 				sb.append(String.format("ON [%s]\n", this.tableName));
 				sb.append("AFTER UPDATE\n");
 				sb.append("AS BEGIN\n");
@@ -515,8 +531,8 @@ public class PartitionWizard extends JDialog {
 					sb.append(String.format("USE [%s];\n", altDB));
 				}
 				for (int i = 0; i < rows; i++) {
-					String newTableName = String.format("%s_%s", this.tableName,
-							UUID.randomUUID().toString().replace('-', '_'));
+					String newTableName = String.format("%s_%s_%s", this.tableName, this.textField_1.getText(),
+							UUID.randomUUID().toString().substring(0, 8).replace('-', '_'));
 
 					int k = 0;
 					for (int j = 0; j < tmodel.getColumnCount(); j++) {
@@ -566,8 +582,8 @@ public class PartitionWizard extends JDialog {
 					sb.setLength(0);
 				}
 
-				sb.append(String.format("CREATE OR ALTER VIEW [%s].[%s_view_frag_v] AS\n", this.schemaName,
-						this.tableName));
+				sb.append(String.format("CREATE OR ALTER VIEW [%s].[%s_view_frag_%s] AS\n", this.schemaName,
+						this.tableName, this.textField_1.getText()));
 
 				String allCols = "";
 				ArrayList<String>[] cols = new ArrayList[columns.length];
@@ -586,15 +602,14 @@ public class PartitionWizard extends JDialog {
 					allCols = String.format("%s,\n\t%s", allCols, String.join(",\n\t", cols[i]));
 				}
 
-				sb.append(String.format("SELECT \n\t%s \nFROM [%s].[%s].[%s] %s,\n", allCols, altDB, this.schemaName,
+				sb.append(String.format("SELECT \n\t%s \nFROM [%s].[%s].[%s] %s", allCols, altDB, this.schemaName,
 						newTables[0], ((char) 65)));
 				for (int i = 1; i < newTables.length; i++) {
-					sb.append(String.format("[%s].[%s].[%s] %s", altDB, this.schemaName, newTables[i],
+					sb.append(String.format(",\n[%s].[%s].[%s] %s", altDB, this.schemaName, newTables[i],
 							((char) (i + 65))));
 					if (i == newTables.length - 1) {
 						continue;
 					}
-					sb.append(",\n");
 				}
 
 				sb.append(";\n");
@@ -612,8 +627,8 @@ public class PartitionWizard extends JDialog {
 				}
 				sb.setLength(0);
 
-				sb.append(String.format("CREATE OR ALTER TRIGGER [%s].[%s_V_trg_frag_insert]\n", this.schemaName,
-						this.tableName));
+				sb.append(String.format("CREATE OR ALTER TRIGGER [%s].[%s_trg_%s_insert]\n", this.schemaName,
+						this.tableName, this.textField_1.getText()));
 				sb.append(String.format("ON [%s]\n", this.tableName));
 				sb.append("AFTER INSERT\n");
 				sb.append("AS BEGIN\n");
@@ -637,8 +652,8 @@ public class PartitionWizard extends JDialog {
 				}
 				sb.setLength(0);
 
-				sb.append(String.format("CREATE OR ALTER TRIGGER [%s].[%s_V_trg_frag_delete]\n", this.schemaName,
-						this.tableName));
+				sb.append(String.format("CREATE OR ALTER TRIGGER [%s].[%s_trg_%s_delete]\n", this.schemaName,
+						this.tableName, this.textField_1.getText()));
 				sb.append(String.format("ON [%s]\n", this.tableName));
 				sb.append("AFTER DELETE\n");
 				sb.append("AS BEGIN\n");
@@ -668,8 +683,8 @@ public class PartitionWizard extends JDialog {
 				}
 				sb = new StringBuilder();
 
-				sb.append(String.format("CREATE OR ALTER TRIGGER [%s].[%s_V_trg_frag_update]\n", this.schemaName,
-						this.tableName));
+				sb.append(String.format("CREATE OR ALTER TRIGGER [%s].[%s_V_trg_%s_update]\n", this.schemaName,
+						this.tableName, this.textField_1.getText()));
 				sb.append(String.format("ON [%s]\n", this.tableName));
 				sb.append("AFTER UPDATE\n");
 				sb.append("AS BEGIN\n");
@@ -713,6 +728,9 @@ public class PartitionWizard extends JDialog {
 				this.parent.getFrame().setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 			}
 		};
+	}
+
+	private void setMixModel() {
 
 	}
 
