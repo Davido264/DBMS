@@ -26,8 +26,8 @@ WHERE v.is_ms_shipped = 0;
 
 	public static final String getPermissionsOverATableQuery = "SELECT DISTINCT(PERMISSION_NAME) FROM fn_my_permissions('%s', 'OBJECT');";
 	
-	public static final String getRolesQuery = "SELECT name AS name FROM sys.server_principals WHERE type = 'R' AND is_disabled <> 1;";
-	public static final String getDBRolesQuery = "SELECT name AS name FROM sys.database_principals WHERE type = 'R';";
+	public static final String getRolesQuery = "SELECT name AS name FROM sys.server_principals WHERE type = 'R' AND is_disabled <> 1 AND name <> 'public';";
+	public static final String getDBRolesQuery = "SELECT name AS name FROM sys.database_principals WHERE type = 'R' AND name <> 'public';";
 	public static final String getUserDBRolesQuery = """
 SELECT DP1.name AS name 
 FROM sys.database_role_members AS DRM  
@@ -37,6 +37,7 @@ LEFT OUTER JOIN sys.database_principals AS DP2
     ON DRM.member_principal_id = DP2.principal_id  
 WHERE DP1.type = 'R'
 AND DP2.name = '%s'
+AND DP1.name <> 'public'
 ORDER BY DP1.name; 			
 """;
 

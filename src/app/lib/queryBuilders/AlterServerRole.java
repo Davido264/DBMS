@@ -1,7 +1,7 @@
 package app.lib.queryBuilders;
 
 public class AlterServerRole implements QueryBuilder {
-	private final String template = "ALTER SERVER ROLE %s ADD MEMBER %s;";
+	private final String template = "ALTER SERVER ROLE [%s] ADD MEMBER %s;";
 	private String user;
 	private String role;
 
