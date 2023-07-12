@@ -311,6 +311,14 @@ public class UserEditor extends JPanel {
 
 			sb.append(command);
 			sb.append("\n");
+
+			for (Object database : this.databases) {
+				sb.append(String.format("USE [%s];\n", database));
+				command = new User(this.loginName.getText(), loginUser).generateQuery();
+				sb.append(command);
+				sb.append("\n");
+			}
+
 			sb.append("\n");
 
 			DefaultTableModel model = (DefaultTableModel) serverRolesTable.getModel();
@@ -320,19 +328,10 @@ public class UserEditor extends JPanel {
 				boolean assigned = (Boolean) model.getValueAt(i, 0);
 				String roleName = (String) model.getValueAt(i, 1);
 				if (assigned) {
-					command = new AlterServerRole(roleName, this.loginName.getText()).generateQuery();
+					command = new AlterServerRole(roleName, String.format("[%s]", loginUser)).generateQuery();
 					sb.append(command);
 					sb.append("\n");
 				}
-			}
-
-			sb.append("\n");
-
-			for (Object database : this.databases) {
-				sb.append(String.format("USE [%s];\n", database));
-				command = new User(this.loginName.getText(), loginUser).generateQuery();
-				sb.append(command);
-				sb.append("\n");
 			}
 
 			sb.append("\n");
@@ -359,7 +358,11 @@ public class UserEditor extends JPanel {
 				System.out.println(script);
 			}
 			var result = operation.executeRaw(script);
-			System.out.println(result.getStatus());
+
+			if (result.getStatus().equals(Status.FAILURE)) {
+				this.parent.getResultReader().loadResult(result);
+				return;
+			}
 
 		} catch (Exception e) {
 			this.parent.getResultReader().loadResult(ResultFactory.fromException(e));
