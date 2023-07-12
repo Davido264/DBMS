@@ -32,6 +32,8 @@ import javax.swing.text.AbstractDocument;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DocumentFilter;
+
+import java.util.ArrayList;
 import java.util.UUID;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeEvent;
@@ -335,7 +337,8 @@ public class PartitionWizard extends JDialog {
 					sb.setLength(0);
 				}
 
-				sb.append(String.format("CREATE VIEW [%s].[%s_view_frag_h] AS\n", this.schemaName, this.tableName));
+				sb.append(String.format("CREATE OR ALTER VIEW [%s].[%s_view_frag_h] AS\n", this.schemaName,
+						this.tableName));
 
 				String[] cols = new String[this.columns.length];
 				for (int i = 0; i < cols.length; i++) {
@@ -504,7 +507,7 @@ public class PartitionWizard extends JDialog {
 
 				StringBuilder sb = new StringBuilder();
 				String[] newTables = new String[tmodel.getRowCount()];
-				String[][] columns = new String[tmodel.getRowCount()][tmodel.getColumnCount()];
+				ArrayList<String>[] columns = new ArrayList[tmodel.getRowCount()];
 
 				String altDB = this.comboBox_1.getSelectedItem().toString();
 
@@ -517,13 +520,16 @@ public class PartitionWizard extends JDialog {
 
 					int k = 0;
 					for (int j = 0; j < tmodel.getColumnCount(); j++) {
-						if ((Boolean) tmodel.getValueAt(i, j)) {
-							columns[i][k] = String.format("[%s]", tmodel.getColumnName(j));
+						if (tmodel.getValueAt(i, j) != null && (Boolean) tmodel.getValueAt(i, j)) {
+							if (columns[i] == null) {
+								columns[i] = new ArrayList<String>(tmodel.getColumnCount());
+							}
+							columns[i].add(String.format("[%s]", tmodel.getColumnName(j)));
 							k++;
 						}
 					}
 
-					sb.append(String.format("SELECT \n\t%s \nINTO [%s].[%s] \nFROM [%s].[%s].[%s]\n",
+					sb.append(String.format("SELECT \n\t%s \nINTO [%s].[%s] \nFROM [%s].[%s].[%s];\n\n",
 							String.join(",\n\t", columns[i]), this.schemaName, newTableName, this.database,
 							this.schemaName, this.tableName));
 					newTables[i] = newTableName;
@@ -560,21 +566,35 @@ public class PartitionWizard extends JDialog {
 					sb.setLength(0);
 				}
 
-				sb.append(String.format("CREATE VIEW [%s].[%s_view_frag_v] AS\n", this.schemaName, this.tableName));
+				sb.append(String.format("CREATE OR ALTER VIEW [%s].[%s_view_frag_v] AS\n", this.schemaName,
+						this.tableName));
 
-				String[] cols = new String[this.columns.length];
+				String allCols = "";
+				ArrayList<String>[] cols = new ArrayList[columns.length];
 				for (int i = 0; i < cols.length; i++) {
-					cols[i] = String.format("[%s]", this.columns[i]);
-				}
-				String allColumns = String.join(",\n\t", cols);
+					for (int j = 0; j < columns[i].size(); j++) {
+						if (cols[i] == null) {
+							cols[i] = new ArrayList<String>(columns[i].size());
+						}
+						cols[i].add(String.format("[%s].%s", ((char) (i + 65)), columns[i].get(j)));
+					}
 
-				for (int i = 0; i < newTables.length; i++) {
-					sb.append(String.format("SELECT \n\t%s \nFROM [%s].[%s].[%s]", allColumns, altDB, this.schemaName,
-							newTables[i]));
+					if (allCols.equals("")) {
+						allCols = String.join(",\n\t", cols[i]);
+						continue;
+					}
+					allCols = String.format("%s,\n\t%s", allCols, String.join(",\n\t", cols[i]));
+				}
+
+				sb.append(String.format("SELECT \n\t%s \nFROM [%s].[%s].[%s] %s,\n", allCols, altDB, this.schemaName,
+						newTables[0], ((char) 65)));
+				for (int i = 1; i < newTables.length; i++) {
+					sb.append(String.format("[%s].[%s].[%s] %s", altDB, this.schemaName, newTables[i],
+							((char) (i + 65))));
 					if (i == newTables.length - 1) {
 						continue;
 					}
-					sb.append("\nUNION ALL\n");
+					sb.append(",\n");
 				}
 
 				sb.append(";\n");
@@ -592,16 +612,15 @@ public class PartitionWizard extends JDialog {
 				}
 				sb.setLength(0);
 
-				sb.append(String.format("CREATE OR ALTER TRIGGER [%s].[%s_trg_frag_insert]\n", this.schemaName,
+				sb.append(String.format("CREATE OR ALTER TRIGGER [%s].[%s_V_trg_frag_insert]\n", this.schemaName,
 						this.tableName));
 				sb.append(String.format("ON [%s]\n", this.tableName));
 				sb.append("AFTER INSERT\n");
 				sb.append("AS BEGIN\n");
-				for (int i = 0; i < rows; i++) {
+				for (int i = 0; i < newTables.length; i++) {
 					String newTableName = newTables[i];
 					sb.append(String.format("INSERT INTO [%s].[%s].[%s]\n", altDB, this.schemaName, newTableName));
-					sb.append("SELECT * FROM INSERTED\n");
-					sb.append(String.format("WHERE %s %s;\n\n", tmodel.getValueAt(i, 0), tmodel.getValueAt(i, 1)));
+					sb.append(String.format("SELECT %s FROM INSERTED;\n\n", String.join(", ", columns[i])));
 				}
 				sb.append("END;\n\n");
 
@@ -618,22 +637,21 @@ public class PartitionWizard extends JDialog {
 				}
 				sb.setLength(0);
 
-				sb.append(String.format("CREATE OR ALTER TRIGGER [%s].[%s_trg_frag_delete]\n", this.schemaName,
+				sb.append(String.format("CREATE OR ALTER TRIGGER [%s].[%s_V_trg_frag_delete]\n", this.schemaName,
 						this.tableName));
 				sb.append(String.format("ON [%s]\n", this.tableName));
 				sb.append("AFTER DELETE\n");
 				sb.append("AS BEGIN\n");
 
-				String[] params = new String[this.columns.length];
+				for (int i = 0; i < newTables.length; i++) {
+					String[] params = new String[columns[i].size()];
+					for (int j = 0; j < params.length; j++) {
+						params[j] = String.format("[s].%s = [i].%s", columns[i].get(j), columns[i].get(j));
+					}
+					String predicate = String.join("\nAND ", params);
 
-				for (int i = 0; i < params.length; i++) {
-					params[i] = String.format("[s].[%s] = [i].[%s]", this.columns[i], this.columns[i]);
-				}
-				String predicate = String.join("\nAND ", params);
-
-				for (String newTable : newTables) {
 					sb.append(String.format("DELETE FROM [%s].[%s].[%s] s INNER JOIN DELETED i \nON %s;\n\n", altDB,
-							this.schemaName, newTable, predicate));
+							this.schemaName, newTables[i], predicate));
 				}
 				sb.append("END;\n\n");
 
@@ -650,21 +668,28 @@ public class PartitionWizard extends JDialog {
 				}
 				sb = new StringBuilder();
 
-				sb.append(String.format("CREATE OR ALTER TRIGGER [%s].[%s_trg_frag_update]\n", this.schemaName,
+				sb.append(String.format("CREATE OR ALTER TRIGGER [%s].[%s_V_trg_frag_update]\n", this.schemaName,
 						this.tableName));
 				sb.append(String.format("ON [%s]\n", this.tableName));
 				sb.append("AFTER UPDATE\n");
 				sb.append("AS BEGIN\n");
 
-				for (int i = 0; i < params.length; i++) {
-					params[i] = String.format("[s].[%s] = [i].[%s]", this.columns[i], this.columns[i]);
-				}
-				String changes = String.join(",\n", params);
+				for (int i = 0; i < newTables.length; i++) {
 
-				for (String newTable : newTables) {
+					String[] params = new String[columns[i].size()];
+					for (int k = 0; k < params.length; k++) {
+						params[k] = String.format("[s].%s = [i].%s", columns[i].get(k), columns[i].get(k));
+					}
+
+					String changes = String.join(",\n", params);
+					for (int j = 0; j < params.length; j++) {
+						params[j] = String.format("[s].%s = [i].%s", columns[i].get(j), columns[i].get(j));
+					}
+
+					String predicate = String.join("\nAND ", params);
 					sb.append(
 							String.format("UPDATE s SET %s \nFROM [%s].[%s].[%s] s\nINNER JOIN INSERTED i \nON %s;\n\n",
-									changes, altDB, this.schemaName, newTable, predicate));
+									changes, altDB, this.schemaName, newTables[i], predicate));
 				}
 				sb.append("END;\n\n");
 
